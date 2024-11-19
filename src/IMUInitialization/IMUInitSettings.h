@@ -1,24 +1,24 @@
 /**
-* This file is part of DM-VIO.
-*
-* Copyright (c) 2022 Lukas von Stumberg <lukas dot stumberg at tum dot de>.
-* for more information see <http://vision.in.tum.de/dm-vio>.
-* If you use this code, please cite the respective publications as
-* listed on the above website.
-*
-* DM-VIO is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
-*
-* DM-VIO is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with DM-VIO. If not, see <http://www.gnu.org/licenses/>.
-*/
+ * This file is part of DM-VIO.
+ *
+ * Copyright (c) 2022 Lukas von Stumberg <lukas dot stumberg at tum dot de>.
+ * for more information see <http://vision.in.tum.de/dm-vio>.
+ * If you use this code, please cite the respective publications as
+ * listed on the above website.
+ *
+ * DM-VIO is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * DM-VIO is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with DM-VIO. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #ifndef DMVIO_IMUINITSETTINGS_H
 #define DMVIO_IMUINITSETTINGS_H
@@ -30,10 +30,10 @@
 namespace dmvio
 {
 
-class CoarseIMUInitOptimizerSettings
-{
-public:
-    void registerArgs(dmvio::SettingsUtil& set, std::string prefix);
+  class CoarseIMUInitOptimizerSettings
+  {
+  public:
+    void registerArgs(dmvio::SettingsUtil &set, std::string prefix);
 
     int maxNumPoses = 100; // forgets older poses.
     bool fixPoses = true, multipleBiases = false;
@@ -49,19 +49,19 @@ public:
 
     bool updatePoses = true; // if true we get the updated poses from DSO before optimizing.
 
-    double requestFullResetErrorThreshold = -1; // if the error gets higher than this request a full reset.
+    double requestFullResetErrorThreshold = -1;           // if the error gets higher than this request a full reset.
     double requestFullResetNormalizedErrorThreshold = -1; // if the normalized error gets higher than this request a full reset.
-};
+  };
 
-class PGBASettings
-{
-public:
-    void registerArgs(dmvio::SettingsUtil& set, std::string prefix);
+  class PGBASettings
+  {
+  public:
+    void registerArgs(dmvio::SettingsUtil &set, std::string prefix);
 
     // Delay of the graph used for the PGBA.
     int delay = 100;
 
-    double scaleUncertaintyThresh = 1.0; // Threshold for first init to succeed.
+    double scaleUncertaintyThresh = 1.0;       // Threshold for first init to succeed.
     double reinitScaleUncertaintyThresh = 0.5; // Threshold to stop reinitializing.
 
     int skipFirstKFs = 0; // if positive the first n KFs are skipped.
@@ -72,22 +72,22 @@ public:
 
     PoseTransformationFactor::ConversionType conversionType = PoseTransformationFactor::JACOBIAN_FACTOR;
     IMUTransformPriorSettings transformPriors;
-};
+  };
 
-class IMUThresholdSettings
-{
-public:
-    void registerArgs(dmvio::SettingsUtil& set, std::string prefix = "thresh_");
+  class IMUThresholdSettings
+  {
+  public:
+    void registerArgs(dmvio::SettingsUtil &set, std::string prefix = "thresh_");
 
     double threshScale = 1000.0;
     double threshGravdir = 1000.0;
-};
+  };
 
-// Settings related to the initializer
-class IMUInitSettings
-{
-public:
-    void registerArgs(dmvio::SettingsUtil& set, std::string prefix = "init_");
+  // Settings related to the initializer
+  class IMUInitSettings
+  {
+  public:
+    void registerArgs(dmvio::SettingsUtil &set, std::string prefix = "init_");
 
     // For available options see enum InitTransitionMode in file IMUInitializerTransitions.
     int transitionModel = 2;
@@ -103,8 +103,8 @@ public:
     PGBASettings pgbaSettings;
 
     // Threshold settings for the marginalization replacement.
-    IMUThresholdSettings thresholdSettings; // default for scale threshold is 1.02
-    double percentageSwitchToSecondTH = 0.5; // switch to second threshold once this fraction of IMU factors would be lost.
+    IMUThresholdSettings thresholdSettings;       // default for scale threshold is 1.02
+    double percentageSwitchToSecondTH = 0.5;      // switch to second threshold once this fraction of IMU factors would be lost.
     IMUThresholdSettings secondThresholdSettings; // default for second scale threshold is effectively infinity (see cpp file).
 
     // Also init IMU params.
@@ -122,9 +122,8 @@ public:
 
     // Setting for debugging. Do IMU initialization in separate thread, even if we are in non-realtime mode.
     bool multithreadedInitDespiteNonRT = false;
-
-};
+  };
 
 }
 
-#endif //DMVIO_IMUINITSETTINGS_H
+#endif // DMVIO_IMUINITSETTINGS_H

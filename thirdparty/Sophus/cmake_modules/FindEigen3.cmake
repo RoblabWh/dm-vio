@@ -20,7 +20,6 @@ else (EIGEN3_INCLUDE_DIR)
         ${KDE4_INCLUDE_DIR}
         )
     include( FindPackageHandleStandardArgs )
-    find_package_handle_standard_args( Eigen3 DEFAULT_MSG EIGEN3_INCLUDE_DIR )   
+    find_package_handle_standard_args( Eigen3 DEFAULT_MSG EIGEN3_INCLUDE_DIR )
     mark_as_advanced( EIGEN3_INCLUDE_DIR )
 endif(EIGEN3_INCLUDE_DIR)
-

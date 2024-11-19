@@ -15,5 +15,3 @@ cd build
 cmake ..
 make
 <<<
-
-

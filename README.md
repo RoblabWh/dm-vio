@@ -35,7 +35,7 @@ When using this project in academic work, please consider citing:
 The following instructions have been tested with Ubuntu 20.04.
 The system is also known to work well on Ubuntu 16.04, 18.04 and MacOS Big Sur (only Intel Macs have been tested so far).
 
-#### 2.1 Required Dependencies 
+#### 2.1 Required Dependencies
 
 ##### Suitesparse, Eigen3, Boost, yaml-cpp (required).
 Required, install with
@@ -58,7 +58,7 @@ Build from source with
     make -j
     sudo make install
 
-(Note: It seems like the keyframe operations are 2-3% slower with this GTSAM version compared to an older commit. To 
+(Note: It seems like the keyframe operations are 2-3% slower with this GTSAM version compared to an older commit. To
 reproduce the realtime paper results you should use commit `a738529af9754c7a085903f90ae8559bbaa82e75` of GTSAM).
 
 ##### OpenCV.
@@ -82,13 +82,13 @@ Install from [https://github.com/stevenlovegrove/Pangolin](https://github.com/st
 	cmake ..
 	cmake --build .
 	sudo make install
-	
-	 
+
+
 
 #### 2.2 Recommended Dependencies
 
 ##### Librealsense
-This is necessary for the live demo for Realsense cameras. See 
+This is necessary for the live demo for Realsense cameras. See
 [doc/RealsenseLiveVersion.md](doc/RealsenseLiveVersion.md) for details
 
 ##### GTest (optional).
@@ -99,7 +99,7 @@ Used to read datasets with images as .zip.
 See [src/dso/README.md](src/dso/README.md) for instructions.
 
 ##### sse2neon (required for ARM builds).
-After cloning, run `git submodule update --init` to include this. 
+After cloning, run `git submodule update --init` to include this.
 
 #### 2.3 Build
 
@@ -114,14 +114,14 @@ It also compiles the library `libdmvio.a`, which other projects can link to.
 
 #### Trouble-Shooting
 The project is based on DSO and only has two additional dependencies with GTSAM and yaml-cpp.
-In case of problems with compilation we recommend trying to compile https://github.com/JakobEngel/dso 
-first and seeing if it works. 
+In case of problems with compilation we recommend trying to compile https://github.com/JakobEngel/dso
+first and seeing if it works.
 
 ### 3 Running
 Download a TUM-VI sequence (download in the format `Euroc / DSO 512x512`) at https://vision.in.tum.de/data/datasets/visual-inertial-dataset
 
     bin/dmvio_dataset
-        files=XXXX/datasetXXXX/dso/cam0/images              
+        files=XXXX/datasetXXXX/dso/cam0/images
         vignette=XXXX/datasetXXXX/dso/cam0/vignette.png
         imuFile=XXXX/datasetXXXX/dso/imu.txt
         gtFile=XXXX/datasetXXXX/dso/gt_imu.csv
@@ -135,7 +135,7 @@ Download a TUM-VI sequence (download in the format `Euroc / DSO 512x512`) at htt
         nogui=0                                                         # use 1 to enable GUI
         resultsPrefix=/PATH_TO_RESULTS/
         settingsFile=PATH_TO_DMVIO/configs/tumvi.yaml
-        start=2                                                         
+        start=2
 
 Instead of typing this long command you can use the [python tools](https://github.com/lukasvst/dm-vio-python-tools).
 
@@ -149,12 +149,12 @@ They can be used to
 
 #### Commandline arguments
 There are two types of commandline arguments:
-1. Main arguments defined `in util/MainSettings.cpp` (see `parseArgument` and `registerArgs`). Most of these are derived from 
-DSO, so you can read [src/dso/README.md](src/dso/README.md) for documentation on them. 
+1. Main arguments defined `in util/MainSettings.cpp` (see `parseArgument` and `registerArgs`). Most of these are derived from
+DSO, so you can read [src/dso/README.md](src/dso/README.md) for documentation on them.
 2. Lots of additional settings are defined using the `SettingsUtil`. They can be set either using comandline
 or by placing them in the yaml file defined with the commandline argument `settingsFile`.
 All of them are printed to commandline when the program starts (and also into the file `usedSettingsdso.txt`).
-Most of these are documented in the header file they are defined in 
+Most of these are documented in the header file they are defined in
 (see `src/IMU/IMUSettings.h`, `src/IMUInitialization/IMUInitSettings.h`).
 
 ### 4 Running the live demo
@@ -163,7 +163,7 @@ See [doc/RealsenseLiveVersion.md](doc/RealsenseLiveVersion.md)
 ### 5 Running on your own datasets
 To run on your own dataset you need
 * to pass the folder containing files with `files=...`
-* an accurate camera calibration! For tips on calibration and the format of camera.txt see 
+* an accurate camera calibration! For tips on calibration and the format of camera.txt see
 [src/dso/README.md](src/dso/README.md).
 * to set the `mode=1` unless you have a photometric calibration (vignette.png and pcalib.txt).
 * a file times.txt which contains **exactly** one timestamp for each image in
@@ -174,11 +174,11 @@ When enabling IMU data you also need
 
 * IMU calibration (transformation between camera and IMU) as a `camchain.yaml`. Note that only the field `cam0/T_cam_imu`
 and optionally the noise values are read from this file.
-* a file containing synchronized IMU data. For each image it **must** contain an IMU 'measurement' with exactly the same timestamp. 
+* a file containing synchronized IMU data. For each image it **must** contain an IMU 'measurement' with exactly the same timestamp.
 If the sensor does not output this, a fake measurement with this timestamp has to be interpolated in advance.
     The [DM-VIO python tools](https://github.com/lukasvst/dm-vio-python-tools) contain a script to do this (see Notes on IMU-camera synchronization below).
 * You should also set the IMU noise values (see `configs/tumvi.yaml`, `configs/euroc.yaml`, and `configs/4seasons.yaml`).
-You can read them from an Allan-Variance plot (either computed yourself or taken from datasheet of IMU). 
+You can read them from an Allan-Variance plot (either computed yourself or taken from datasheet of IMU).
 Note that often times these values are too small in practice and should be inflated by a large factor for optimal results.
 We recommend first trying the sample noise values (e.g. the one for TUM-VI) and only using your own if they improve the performance.
 
@@ -188,13 +188,13 @@ We recommend first trying the sample noise values (e.g. the one for TUM-VI) and 
 
       python3 interpolate_imu_file --input imu.txt --times times.txt --output pass_this_imu_file_to_dmvio.txt
 
-You can first set `useimu=0` to try the visual-only system (basically DSO). If this does not work well for 
+You can first set `useimu=0` to try the visual-only system (basically DSO). If this does not work well for
 comparably slow motions, there is likely a problem with camera calibration which should be addressed first.
 
 **For adjusting your config you might also find the tips [given on this page](doc/RealsenseLiveVersion.md#adjusting-the-config-file) interesting.**
 
 ### 6 License
-DM-VIO is based on Direct Sparse Odometry (DSO), which was developed by Jakob Engel 
+DM-VIO is based on Direct Sparse Odometry (DSO), which was developed by Jakob Engel
 at the Technical University of Munich and Intel.
 Like DSO, DM-VIO is licensed under the GNU General Public License
 Version 3 (GPLv3).

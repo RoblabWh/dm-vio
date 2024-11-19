@@ -26,12 +26,12 @@ Afterwards you will need to rebuild DM-VIO.
 
 Run with
 
-    bin/dmvio_t265 
-        useimu=1 
-        mode=0 
-        preset=1 
-        nogui=0 
-        quiet=1 
+    bin/dmvio_t265
+        useimu=1
+        mode=0
+        preset=1
+        nogui=0
+        quiet=1
         start=2
         settingsFile=PATH_TO_DMVIO/configs/t265_noise_tumvi.yaml
         resultsPrefix=/PATH_TO_RESULTS/
@@ -98,13 +98,13 @@ Below are sample scripts demonstrating how to use it in practice.
 
 #### live_demo_with_saving.sh
 
-    savefolder=/FOLDER/TO/DATASETS/$1                                                                                                                                                                                                       
+    savefolder=/FOLDER/TO/DATASETS/$1
     dm-vio/cmake-build-relwithdebinfo/bin/dmvio_t265 useimu=1 mode=0 preset=1 nogui=0 quiet=1 start=2 settingsFile=dm-vio/configs/t265_noise_tumvi.yaml resultsPrefix=./runResults/ calibSavePath=./RealsenseCalibration/factory_calib.txt camchainSavePath=./RealsenseCalibration/factory_camchain.yaml vignette=dm-vio/configs/realsense/vignette_t265.png gamma=dm-vio/configs/pcalib_linear_8bit.txt saveDatasetPath=$savefolder
     python3 dm-vio-python-tools/interpolate_imu_file.py --input $savefolder/imu_orig.txt --times $savefolder/times.txt --output $savefolder/imu.txt
 
 #### run_on_dataset.sh
 
-    savefolder=/FOLDER/TO/DATASETS/$1                                                                                                                                                                                                       
+    savefolder=/FOLDER/TO/DATASETS/$1
     dm-vio/cmake-build-relwithdebinfo/bin/dmvio_dataset useimu=1 mode=0 preset=0 nogui=0 quiet=1 start=2 settingsFile=dm-vio/configs/t265_noise_tumvi.yaml resultsPrefix=./runResults/ vignette=dm-vio/configs/realsense/vignette_t265.png gamma=dm-vio/configs/pcalib_linear_8bit.txt files=$savefolder/cam0 imuCalib=./RealsenseCalibration/factory_camchain.yaml calib=./RealsenseCalibration/factory_calib.txt
 
 To make this work you will need to adjust the paths for the arguments.

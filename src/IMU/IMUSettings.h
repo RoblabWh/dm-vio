@@ -1,24 +1,24 @@
 /**
-* This file is part of DM-VIO.
-*
-* Copyright (c) 2022 Lukas von Stumberg <lukas dot stumberg at tum dot de>.
-* for more information see <http://vision.in.tum.de/dm-vio>.
-* If you use this code, please cite the respective publications as
-* listed on the above website.
-*
-* DM-VIO is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
-*
-* DM-VIO is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with DM-VIO. If not, see <http://www.gnu.org/licenses/>.
-*/
+ * This file is part of DM-VIO.
+ *
+ * Copyright (c) 2022 Lukas von Stumberg <lukas dot stumberg at tum dot de>.
+ * for more information see <http://vision.in.tum.de/dm-vio>.
+ * If you use this code, please cite the respective publications as
+ * listed on the above website.
+ *
+ * DM-VIO is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * DM-VIO is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with DM-VIO. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #ifndef DMVIO_IMUSETTINGS_H
 #define DMVIO_IMUSETTINGS_H
@@ -33,20 +33,20 @@
 namespace dmvio
 {
 
-// Contains various IMU related settings.
-// There are the following ways to set them (where the latter ones overwrite the former ones):
-// - Default values set in the code (here or in the constructor).
-// - Values set using a settings.yaml file.
-// - Values set using commandline arguments.
-class IMUSettings
-{
-public:
-    void registerArgs(dmvio::SettingsUtil& set);
+  // Contains various IMU related settings.
+  // There are the following ways to set them (where the latter ones overwrite the former ones):
+  // - Default values set in the code (here or in the constructor).
+  // - Values set using a settings.yaml file.
+  // - Values set using commandline arguments.
+  class IMUSettings
+  {
+  public:
+    void registerArgs(dmvio::SettingsUtil &set);
 
     // Prefix for all results files.
     std::string resultsPrefix = "";
 
-    IMUInitSettings initSettings; // settings for the IMU initializer.
+    IMUInitSettings initSettings;               // settings for the IMU initializer.
     double maxTimeBetweenInitFrames = 100000.0; // Maximum time between the first 2 frames for DSO.
 
     // Don't add IMU data between the first two keyframes. Should not be set when the IMU initializer is active (unless
@@ -54,9 +54,9 @@ public:
     bool skipFirstKeyframe = false;
 
     // Weight wrt DSO.
-    double setting_weightDSOCoarse = 1.0 / 1000; // DSO weight for coarse tracking.
-    double setting_weightDSOToGTSAM = 1.0 / 60000;// DSO weight for BA.
-    float maxFrameEnergyThreshold = 5000; // Maximum energy threshold for DSO.
+    double setting_weightDSOCoarse = 1.0 / 1000;   // DSO weight for coarse tracking.
+    double setting_weightDSOToGTSAM = 1.0 / 60000; // DSO weight for BA.
+    float maxFrameEnergyThreshold = 5000;          // Maximum energy threshold for DSO.
 
     // ----------- BA Settings -----------
     // Settings regarding dynamic photometric weight.
@@ -77,10 +77,10 @@ public:
     bool setting_optIMUExtrinsics = false;
 
     // Settings regarding priors.
-    bool setting_prior_bias = false; // Only relevant if disableVIOUntilFirstInit=false
-    bool setting_prior_velocity = false; // Only relevant if disableVIOUntilFirstInit=false
+    bool setting_prior_bias = false;           // Only relevant if disableVIOUntilFirstInit=false
+    bool setting_prior_velocity = false;       // Only relevant if disableVIOUntilFirstInit=false
     IMUTransformPriorSettings transformPriors; // Prior settings for gravity and IMU extrinsics.
-    bool gravityDirectionFixZ = true; // Fix z-axis of gravity direction (as yaw is not observable).
+    bool gravityDirectionFixZ = true;          // Fix z-axis of gravity direction (as yaw is not observable).
 
     // Don't include IMU variables when calculating whether the BA optimization can break.
     bool alwaysCanBreakIMU = false;
@@ -106,22 +106,22 @@ public:
     // Use the visual only system after scale has been fixed, which can be useful for debugging (only makes sense together with setting_scaleFixTH).
     // 1 means that also the gtsamIntegration is not used anymore, while 2 means that the gtsamIntegration is still used with IMUExtension removed.
     int setting_visualOnlyAfterScaleFixing = 0;
-};
+  };
 
-// Contains IMU-Calibration and can read them from file.
-// Default contains values for EuRoC.
-class IMUCalibration
-{
-public:
+  // Contains IMU-Calibration and can read them from file.
+  // Default contains values for EuRoC.
+  class IMUCalibration
+  {
+  public:
     IMUCalibration();
 
     IMUCalibration(std::string settingsFilename);
-    IMUCalibration(const Sophus::SE3d& tCamImu);
+    IMUCalibration(const Sophus::SE3d &tCamImu);
     void loadFromFile(std::string settingsFilename);
     void saveToFile(std::string filename); // Save T_cam_imu to as a camchain.yaml.
 
     // The noise values are registered as settings so they can be set from commandline and from the settings yaml.
-    void registerArgs(dmvio::SettingsUtil& set);
+    void registerArgs(dmvio::SettingsUtil &set);
 
     Sophus::SE3d T_cam_imu;
     // Old defaults for EuRoC.
@@ -132,12 +132,13 @@ public:
     double integration_sigma = 0.316227;
 
     // Currently not read from settings.
-    gtsam::Vector3 gravity = (gtsam::Vector(3) << 0, 0, -9.8082).finished();;
+    gtsam::Vector3 gravity = (gtsam::Vector(3) << 0, 0, -9.8082).finished();
+    ;
 
-private:
+  private:
     void initDefault();
-};
+  };
 
 }
 
-#endif //DMVIO_IMUSETTINGS_H
+#endif // DMVIO_IMUSETTINGS_H

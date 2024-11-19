@@ -128,13 +128,13 @@ include_directories(
   ${PROJECT_SOURCE_DIR}/thirdparty/sse2neon
   ${EIGEN3_INCLUDE_DIR}
   ${GTSAM_INCLUDE_DIR}
-) 
+)
 
 
 # decide if we have pangolin
 if (Pangolin_FOUND)
 	message("--- found PANGOLIN, compiling with pangolin library.")
-	include_directories( ${Pangolin_INCLUDE_DIRS} ) 
+	include_directories( ${Pangolin_INCLUDE_DIRS} )
 	set(dso_pangolin_SOURCE_FILES
 			${DSO_SOURCE_DIR}/IOWrapper/Pangolin/KeyFrameDisplay.cpp
 			${DSO_SOURCE_DIR}/IOWrapper/Pangolin/PangolinDSOViewer.cpp
@@ -168,7 +168,7 @@ endif ()
 if (LIBZIP_LIBRARY)
 	message("--- found ziplib (${LIBZIP_VERSION}), compiling with zip capability.")
 	add_definitions(-DHAS_ZIPLIB=1)
-	include_directories( ${LIBZIP_INCLUDE_DIR_ZIP} ${LIBZIP_INCLUDE_DIR_ZIPCONF} ) 
+	include_directories( ${LIBZIP_INCLUDE_DIR_ZIP} ${LIBZIP_INCLUDE_DIR_ZIPCONF} )
 else()
 	message("--- not found ziplib (${LIBZIP_LIBRARY}), compiling without zip capability.")
 	set(LIBZIP_LIBRARY "")

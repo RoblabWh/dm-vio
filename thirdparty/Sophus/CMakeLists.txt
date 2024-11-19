@@ -65,7 +65,7 @@ INCLUDE_DIRECTORIES(${INCLUDE_DIRS})
 # ADD_EXECUTABLE(test_rxso3 sophus/test_rxso3.cpp ${SOURCES})
 # ADD_EXECUTABLE(test_sim3 sophus/test_sim3.cpp ${SOURCES})
 # ENABLE_TESTING()
-# 
+#
 # ADD_TEST(test_so2 test_so2)
 # ADD_TEST(test_se2 test_se2)
 # ADD_TEST(test_so3 test_so3)
