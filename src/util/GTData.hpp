@@ -26,8 +26,6 @@
 #include <stdio.h>
 
 #include <Eigen/Eigenvalues>
-
-#include <sophus/sophus.hpp>
 #include <sophus/se3.hpp>
 
 namespace dmvio
@@ -39,13 +37,13 @@ namespace dmvio
     {
     }
 
-    inline GTData(Sophus::SE3 pose, Eigen::Vector3d velocity, Eigen::Vector3d biasRotation,
+    inline GTData(dso::SE3 pose, Eigen::Vector3d velocity, Eigen::Vector3d biasRotation,
                   Eigen::Vector3d biasTranslation)
         : pose(pose), velocity(velocity), biasRotation(biasRotation), biasTranslation(biasTranslation)
     {
     }
 
-    Sophus::SE3 pose;
+    dso::SE3 pose;
     Eigen::Vector3d velocity; // Note: velocities might be in the vicon frame instead of the world frame...
     Eigen::Vector3d biasRotation;
     Eigen::Vector3d biasTranslation;

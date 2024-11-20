@@ -54,7 +54,8 @@ set(CMAKE_CXX_FLAGS_RELEASE
   "-O3 -DNDEBUG"
 )
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
 if(MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
@@ -118,10 +119,11 @@ set(dmvio_SOURCE_FILES
   src/live/DatasetSaver.cpp
 )
 
+add_subdirectory(thirdparty/basalt-headers)
+
 include_directories(
   ${PROJECT_SOURCE_DIR}/src
   ${PROJECT_SOURCE_DIR}/src/dso
-  ${PROJECT_SOURCE_DIR}/thirdparty/Sophus
   ${PROJECT_SOURCE_DIR}/thirdparty/sse2neon
   ${EIGEN3_INCLUDE_DIR}
   ${GTSAM_INCLUDE_DIR}
@@ -173,6 +175,7 @@ endif()
 # compile main library.
 include_directories(${CSPARSE_INCLUDE_DIR} ${CHOLMOD_INCLUDE_DIR} ${YAML_CPP_INCLUDE_DIR})
 add_library(dmvio ${dso_SOURCE_FILES} ${dmvio_SOURCE_FILES} ${dso_opencv_SOURCE_FILES} ${dso_pangolin_SOURCE_FILES})
+target_link_libraries(dmvio basalt::basalt-headers)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin") # OSX
   set(BOOST_THREAD_LIBRARY boost_thread-mt)

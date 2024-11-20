@@ -104,7 +104,7 @@ IMUIntegration::IMUIntegration(dso::CalibHessian *HCalib, const IMUCalibration &
 }
 
 // return lastKeyframe to newKeyframe.
-Sophus::SE3d IMUIntegration::initCoarseGraph()
+dso::SE3 IMUIntegration::initCoarseGraph()
 {
   if (!dso::setting_debugout_runquiet)
   {
@@ -115,7 +115,7 @@ Sophus::SE3d IMUIntegration::initCoarseGraph()
 
   if (!informationBAToCoarse)
   {
-    return Sophus::SE3d{};
+    return dso::SE3{};
   }
   coarseInitialized = true;
   return coarseLogic->initCoarseGraph(keyframeId, std::move(informationBAToCoarse));
@@ -145,7 +145,7 @@ void IMUIntegration::addIMUDataToBA(const IMUData &imuData)
 }
 
 // returns estimated referenceToFrame.
-Sophus::SE3 IMUIntegration::addIMUData(const IMUData &imuData, int frameId, double frameTimestamp,
+dso::SE3 IMUIntegration::addIMUData(const IMUData &imuData, int frameId, double frameTimestamp,
                                        bool firstFrameAfterKFChange,
                                        int lastFrameId, bool onlyForHint)
 {
@@ -172,26 +172,26 @@ Sophus::SE3 IMUIntegration::addIMUData(const IMUData &imuData, int frameId, doub
   }
 
   if (!isCoarseInitialized())
-    return Sophus::SE3d{};
+    return dso::SE3{};
 
   return coarseLogic->addIMUData(imuData, frameId, frameTimestamp, lastFrameId, additionalMeasurements,
                                  preparedKeyframe);
 }
 
-void IMUIntegration::updateCoarsePose(const Sophus::SE3 &refToFrame)
+void IMUIntegration::updateCoarsePose(const dso::SE3 &refToFrame)
 {
   if (!coarseInitialized)
     return;
   coarseLogic->updateCoarsePose(refToFrame);
 }
 
-Sophus::SE3
+dso::SE3
 IMUIntegration::computeCoarseUpdate(const dso::Mat88 &H_in, const dso::Vec8 &b_in, float extrapFac, float lambda,
                                     double &incA, double &incB, double &incNorm)
 {
 
   assert(isCoarseInitialized()); // Caller is responsible for not calling if not initialized.
-  Sophus::SE3d newReferenceToFrame = coarseLogic->computeCoarseUpdate(H_in, b_in, extrapFac, lambda, incA, incB,
+  dso::SE3 newReferenceToFrame = coarseLogic->computeCoarseUpdate(H_in, b_in, extrapFac, lambda, incA, incB,
                                                                       incNorm);
 
   return newReferenceToFrame;
@@ -342,11 +342,11 @@ bool IMUIntegration::isPreparedKFCreated() const
   return preparedKFCreated;
 }
 
-Sophus::SE3d IMUIntegration::getCoarseKFPose()
+dso::SE3 IMUIntegration::getCoarseKFPose()
 {
   if (!isCoarseInitialized())
-    return Sophus::SE3d{};
-  Sophus::SE3d pose = coarseLogic->getCoarseKFPose();
+    return dso::SE3{};
+  dso::SE3 pose = coarseLogic->getCoarseKFPose();
   return pose;
 }
 

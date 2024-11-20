@@ -251,7 +251,7 @@ namespace dmvio
   // so this method is typically very far from thread-safe!
   template <typename T>
   gtsam::Matrix
-  computeNumericJacobian(PoseTransformation &transformation, const Sophus::SE3d &pose, T *variableToChange,
+  computeNumericJacobian(PoseTransformation &transformation, const dso::SE3 &pose, T *variableToChange,
                          DerivativeDirection direction)
   {
 #ifndef DEBUG
@@ -264,7 +264,7 @@ namespace dmvio
     // Numeric Jacobians work by slightly changing the pose in each direction, and then computing how much it effects the
     // converted pose.
     dso::Mat44 transformedPose = transformation.transformPose(pose.matrix());
-    Sophus::SE3d transformedPoseInv = Sophus::SE3d(transformedPose).inverse();
+    dso::SE3 transformedPoseInv = dso::SE3(transformedPose).inverse();
     for (int i = 0; i < T::DoF; ++i)
     {
       gtsam::Vector incVec = gtsam::Vector::Zero(T::DoF);
@@ -281,9 +281,9 @@ namespace dmvio
         *variableToChange = T::exp(incVec) * *variableToChange;
       }
 
-      Sophus::SE3d transformedPoseNew(transformation.transformPose(pose.matrix()));
+      dso::SE3 transformedPoseNew(transformation.transformPose(pose.matrix()));
       *variableToChange = variableBackup;
-      Sophus::SE3d relPose;
+      dso::SE3 relPose;
       if (direction == dmvio::DerivativeDirection::LEFT_TO_LEFT ||
           direction == dmvio::DerivativeDirection::RIGHT_TO_LEFT)
       {
@@ -294,7 +294,7 @@ namespace dmvio
         relPose = transformedPoseInv * transformedPoseNew;
       }
 
-      dso::Vec6 derivative = Sophus::SE3d::log(relPose);
+      dso::Vec6 derivative = relPose.log();
       fullDerivative.col(i) = derivative / epsilon;
     }
 

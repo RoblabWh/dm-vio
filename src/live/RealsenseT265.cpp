@@ -305,7 +305,7 @@ void dmvio::RealsenseT265::readCalibration()
       Eigen::Matrix3f rot = Eigen::Map<Eigen::Matrix3f>(ex.rotation);
       Eigen::Vector3f trans = Eigen::Map<Eigen::Vector3f>(ex.translation);
 
-      Sophus::SE3d T_imu_cam(rot.cast<double>(), trans.cast<double>());
+      SE3 T_imu_cam(rot.cast<double>(), trans.cast<double>());
 
       std::cout << "T_imu_cam: " << T_imu_cam.matrix() << std::endl;
       std::cout << "T_cam_imu: " << T_imu_cam.inverse().matrix() << std::endl;

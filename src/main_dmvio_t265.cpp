@@ -262,7 +262,7 @@ int main(int argc, char **argv)
   }
 
   std::unique_ptr<Undistort> undistorter(
-      Undistort::getUndistorterForFile(usedCalib, mainSettings.gammaCalib, mainSettings.vignette));
+      Undistort::makeFromDSOCalibration(usedCalib, mainSettings.gammaCalib, mainSettings.vignette));
   realsense.setUndistorter(undistorter.get());
 
   setGlobalCalib(

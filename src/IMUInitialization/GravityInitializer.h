@@ -25,6 +25,7 @@
 
 #include "sophus/se3.hpp"
 #include "IMU/IMUIntegration.hpp"
+#include "dso/util/NumType.h"
 
 namespace dmvio
 {
@@ -35,7 +36,7 @@ namespace dmvio
     GravityInitializer(int numMeasurementsToUse, const IMUCalibration &imuCalibration);
 
     // returns an approximate imuToWorld transform (only rotation).
-    Sophus::SE3d addMeasure(const IMUData &imuData, const Sophus::SE3d &currToFirst);
+    dso::SE3 addMeasure(const IMUData &imuData, const dso::SE3 &currToFirst);
 
   private:
     int maxNumMeasurements; // Num of last gravity measurements to average.
@@ -43,7 +44,7 @@ namespace dmvio
     Eigen::Vector3d gravity;
   };
 
-  double getGravityError(const Sophus::SE3d &imuToWorld, const Sophus::SE3d &imuToWorldGT);
+  double getGravityError(const dso::SE3 &imuToWorld, const dso::SE3 &imuToWorldGT);
 
 }
 

@@ -614,7 +614,7 @@ namespace dso
       this->systemStatus = systemStatus;
     }
 
-    void PangolinDSOViewer::addGTCamPose(const Sophus::SE3 &gtPose)
+    void PangolinDSOViewer::addGTCamPose(const SE3 &gtPose)
     {
       boost::unique_lock<boost::mutex> lk(model3DMutex);
 

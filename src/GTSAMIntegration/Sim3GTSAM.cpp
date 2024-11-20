@@ -32,9 +32,9 @@ ScaleGTSAM::ScaleGTSAM(double scale)
 {
 }
 
-Sophus::Sim3d ScaleGTSAM::sim() const
+dso::Sim3 ScaleGTSAM::sim() const
 {
-  Sophus::Sim3d ret;
+  dso::Sim3 ret;
   ret.setScale(scale);
   return ret;
 }
@@ -71,7 +71,7 @@ ScaleGTSAM ScaleGTSAM::inverse() const
 
 gtsam::Vector1 ScaleGTSAM::Logmap(const ScaleGTSAM &s, gtsam::OptionalJacobian<1, 1> Hm)
 {
-  Sophus::Sim3d::Tangent tangent = Sophus::Sim3d::log(s.sim());
+  dso::Sim3::Tangent tangent = s.sim().log();
   gtsam::Vector1 ret;
   ret(0) = tangent(6);
   return ret;
@@ -87,7 +87,7 @@ ScaleGTSAM ScaleGTSAM::Expmap(const Vector1 &v, gtsam::OptionalJacobian<1, 1> Hm
   }
   gtsam::Vector7 myInc = gtsam::Vector7::Zero();
   myInc(6) = scaleInc;
-  Sophus::Sim3d simAfter = Sophus::Sim3d::exp(myInc);
+  dso::Sim3 simAfter = dso::Sim3::exp(myInc);
   return ScaleGTSAM(simAfter.scale());
 }
 

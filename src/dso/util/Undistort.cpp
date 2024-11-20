@@ -252,7 +252,7 @@ namespace dso
       delete[] remapY;
   }
 
-  Undistort *Undistort::getUndistorterForFile(std::string configFilename, std::string gammaFilename, std::string vignetteFilename)
+  Undistort *Undistort::makeFromDSOCalibration(std::string configFilename, std::string gammaFilename, std::string vignetteFilename)
   {
     printf("Reading Calibration from file %s", configFilename.c_str());
 

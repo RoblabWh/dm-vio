@@ -141,8 +141,8 @@ bool dmvio::thresholdVariableChanges(IMUThresholdSettings settings, const gtsam:
 
   if (fejValues.exists(gravKey))
   {
-    Sophus::SO3d R_dsoW_metricW(baValues.at<gtsam::Rot3>(gravKey).matrix());
-    Sophus::SO3d fejR_dsoW_metricW(fejValues.at<gtsam::Rot3>(gravKey).matrix());
+    dso::SO3 R_dsoW_metricW(baValues.at<gtsam::Rot3>(gravKey).matrix());
+    dso::SO3 fejR_dsoW_metricW(fejValues.at<gtsam::Rot3>(gravKey).matrix());
     double gravDiff = (R_dsoW_metricW.inverse() * fejR_dsoW_metricW).log().norm();
     if (gravDiff > settings.threshGravdir)
       return true;

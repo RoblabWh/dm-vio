@@ -56,7 +56,7 @@ namespace dmvio
                                     const CoarseIMUInitOptimizerSettings &settingsPassed);
 
     // Add frame to the optimizer.
-    void addPose(int frameId, const Sophus::SE3d &camToWorld, const gtsam::PreintegratedImuMeasurements *imuData);
+    void addPose(int frameId, const dso::SE3 &camToWorld, const gtsam::PreintegratedImuMeasurements *imuData);
     void addPose(const dso::FrameShell &shell, const gtsam::PreintegratedImuMeasurements *imuData);
 
     struct OptimizationResult

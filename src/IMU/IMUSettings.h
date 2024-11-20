@@ -116,14 +116,14 @@ namespace dmvio
     IMUCalibration();
 
     IMUCalibration(std::string settingsFilename);
-    IMUCalibration(const Sophus::SE3d &tCamImu);
+    IMUCalibration(const dso::SE3 &tCamImu);
     void loadFromFile(std::string settingsFilename);
     void saveToFile(std::string filename); // Save T_cam_imu to as a camchain.yaml.
 
     // The noise values are registered as settings so they can be set from commandline and from the settings yaml.
     void registerArgs(dmvio::SettingsUtil &set);
 
-    Sophus::SE3d T_cam_imu;
+    dso::SE3 T_cam_imu;
     // Old defaults for EuRoC.
     double sigma_between_b_a = 0.00447213;
     double sigma_between_b_g = 0.0014142;

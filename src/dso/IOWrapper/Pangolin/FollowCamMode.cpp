@@ -28,7 +28,7 @@ namespace dso
   {
 
     pangolin::OpenGlRenderState *
-    FollowCamMode::updateVisualizationCam(const Sophus::SE3d &camToWorldIn, pangolin::OpenGlRenderState &renderStateIn)
+    FollowCamMode::updateVisualizationCam(const SE3 &camToWorldIn, pangolin::OpenGlRenderState &renderStateIn)
     {
       bool transOnly = followCamTransSetting->Get();
       bool followCam = followCamSetting->Get(); // curr setting value.
@@ -43,11 +43,11 @@ namespace dso
       output.SetProjectionMatrix(renderStateIn.GetProjectionMatrix());
 
       auto &&modelViewIn = renderStateIn.GetModelViewMatrix();
-      Sophus::SE3d T_pcam_world(modelViewIn); // world to Pangolin-Cam.
+      SE3 T_pcam_world(modelViewIn); // world to Pangolin-Cam.
 
-      Sophus::SE3d output_cam_w;
+      SE3 output_cam_w;
 
-      Sophus::SE3d camToWorld = getAverageCamToWorld(camToWorldIn);
+      SE3 camToWorld = getAverageCamToWorld(camToWorldIn);
 
       if (transOnly && !transActive && followActive)
       {
@@ -60,7 +60,7 @@ namespace dso
       if (followCam && !transOnly && transActive)
       {
         // We want followCam, but before we were using transOnly --> first disable that.
-        Sophus::SE3d noRot{Eigen::Quaterniond::Identity(), camToWorld.translation()};
+        SE3 noRot{Eigen::Quaterniond::Identity(), camToWorld.translation()};
         disableOffsetForFollowCam(noRot);
         followActive = false;
       }
@@ -97,12 +97,12 @@ namespace dso
       return &output;
     }
 
-    void FollowCamMode::setOffsetForFollowCam(Sophus::SE3d &camToWorld)
+    void FollowCamMode::setOffsetForFollowCam(SE3 &camToWorld)
     {
       currOffset = currOffset * camToWorld;
     }
 
-    void FollowCamMode::disableOffsetForFollowCam(Sophus::SE3d &camToWorld)
+    void FollowCamMode::disableOffsetForFollowCam(SE3 &camToWorld)
     {
       currOffset = currOffset * camToWorld.inverse();
     }
@@ -114,7 +114,7 @@ namespace dso
       smoothnessSetting = std::make_unique<pangolin::Var<int>>("ui.smoothness", 50, 1, 100, false);
     }
 
-    Sophus::SE3d FollowCamMode::getAverageCamToWorld(const Sophus::SE3d &camToWorld)
+    SE3 FollowCamMode::getAverageCamToWorld(const SE3 &camToWorld)
     {
       int num = smoothnessSetting->Get();
 
@@ -139,7 +139,7 @@ namespace dso
       }
       avgTrans /= translations.size();
 
-      return Sophus::SE3d(avgQuat, avgTrans);
+      return SE3(avgQuat, avgTrans);
     }
 
   }

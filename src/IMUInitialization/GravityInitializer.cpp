@@ -32,8 +32,8 @@ GravityInitializer::GravityInitializer(int numMeasurementsToUse, const IMUCalibr
   gravity = imuCalibration.gravity;
 }
 
-Sophus::SE3d
-GravityInitializer::addMeasure(const IMUData &imuData, const Sophus::SE3d &currToFirst)
+dso::SE3
+GravityInitializer::addMeasure(const IMUData &imuData, const dso::SE3 &currToFirst)
 {
   int numMeasure = 0;
   Eigen::Vector3d measure(0.0, 0.0, 0.0);
@@ -64,12 +64,12 @@ GravityInitializer::addMeasure(const IMUData &imuData, const Sophus::SE3d &currT
   Eigen::Quaterniond quat;
   quat.setFromTwoVectors(measure, -gravity);
 
-  Sophus::SE3d imuToWorld(quat, Eigen::Vector3d::Zero());
+  dso::SE3 imuToWorld(quat, Eigen::Vector3d::Zero());
 
   return imuToWorld;
 }
 
-double dmvio::getGravityError(const Sophus::SE3d &imuToWorld, const Sophus::SE3d &imuToWorldGT)
+double dmvio::getGravityError(const dso::SE3 &imuToWorld, const dso::SE3 &imuToWorldGT)
 {
   Eigen::Vector3d g = (gtsam::Vector(3)
                            << 0,

@@ -23,9 +23,9 @@
 #ifndef DMVIO_SIM3GTSAM_H
 #define DMVIO_SIM3GTSAM_H
 
-#include <sophus/sim3.hpp>
 #include <gtsam/base/Manifold.h>
 #include <gtsam/base/Lie.h>
+#include <dso/util/NumType.h>
 
 // In contrast to Sim3GTSAM this contains only the scale.
 // Could probably be made faster by not basing it on Sophus.
@@ -34,7 +34,7 @@ class ScaleGTSAM : public gtsam::LieGroup<ScaleGTSAM, 1>
 public:
   ScaleGTSAM(double scale);
 
-  Sophus::Sim3d sim() const;
+  dso::Sim3 sim() const;
   double scale = 1.0;
 
   // For the LieGroup.

@@ -174,7 +174,7 @@ namespace dso
   public:
     dmvio::IMUIntegration &getImuIntegration();
 
-    Sophus::SE3 firstPose; // contains transform from first to world.
+    SE3 firstPose; // contains transform from first to world.
 
   private:
     CalibHessian Hcalib;
@@ -190,7 +190,7 @@ namespace dso
     double linAllPointSinle(PointHessian *point, float outlierTHSlack, bool plot);
 
     // mainPipelineFunctions
-    std::pair<Vec4, bool> trackNewCoarse(FrameHessian *fh, Sophus::SE3 *referenceToFrameHint = 0);
+    std::pair<Vec4, bool> trackNewCoarse(FrameHessian *fh, SE3 *referenceToFrameHint = 0);
     void traceNewCoarse(FrameHessian *fh);
     void activatePoints();
     void activatePointsMT();
@@ -258,7 +258,7 @@ namespace dso
     // =================== changed by tracker-thread. protected by trackMutex ============
     boost::mutex trackMutex;
     std::vector<FrameShell *> allFrameHistory;
-    std::vector<Sophus::SE3> gtPoses;
+    std::vector<SE3> gtPoses;
     CoarseInitializer *coarseInitializer;
     Vec5 lastCoarseRMSE;
 

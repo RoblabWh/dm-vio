@@ -57,7 +57,7 @@ namespace dmvio
     // Called when a keyframe (except the first one) is added.
     // The method is supposed to add its factors to baGraphs, and new variables into baValues.
     virtual void addKeyframe(BAGraphs *baGraphs, gtsam::Values::shared_ptr baValues, int keyframeId,
-                             const Sophus::SE3d &keyframePose, std::vector<dso::EFFrame *> &frames) = 0;
+                             const dso::SE3 &keyframePose, std::vector<dso::EFFrame *> &frames) = 0;
 
     // The extension can update the passed ordering with more variables.
     virtual void
@@ -169,7 +169,7 @@ namespace dmvio
 
     void addFirstBAFrame(int keyframeId);
 
-    void addKeyframeToBA(int keyframeId, const Sophus::SE3d &keyframePose, std::vector<dso::EFFrame *> &frames);
+    void addKeyframeToBA(int keyframeId, const dso::SE3 &keyframePose, std::vector<dso::EFFrame *> &frames);
 
     // called from addKeyframeToBA and from outside (FullSystem::makeKeyFrame)
     void updateBAOrdering(std::vector<dso::EFFrame *> &frames);

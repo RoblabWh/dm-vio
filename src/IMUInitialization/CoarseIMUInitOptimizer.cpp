@@ -65,7 +65,7 @@ void CoarseIMUInitOptimizer::handleFirstFrame(int frameId)
   values.insert(biasKey, imuBias::ConstantBias(gtsam::Vector6::Zero()));
 }
 
-void dmvio::CoarseIMUInitOptimizer::addPose(int frameId, const Sophus::SE3d &camToWorld,
+void dmvio::CoarseIMUInitOptimizer::addPose(int frameId, const dso::SE3 &camToWorld,
                                             const gtsam::PreintegratedImuMeasurements *imuData)
 {
   // Note that we are optimizing worldToCam!
@@ -179,7 +179,7 @@ dmvio::CoarseIMUInitOptimizer::OptimizationResult dmvio::CoarseIMUInitOptimizer:
           {
             const auto *shell = activeShells.at(sym.index());
             // compute updated camToWorld
-            Sophus::SE3d camToWorld = shell->camToWorld;
+            dso::SE3 camToWorld = shell->camToWorld;
             if (shell->keyframeId == -1)
             {
               camToWorld = shell->trackingRef->camToWorld * shell->camToTrackingRef;

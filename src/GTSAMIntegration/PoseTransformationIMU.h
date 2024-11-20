@@ -82,7 +82,7 @@ namespace dmvio
     void setScale(double variable);
     double getScale() const;
 
-    const Sophus::SE3d &getT_cam_imu() const;
+    const dso::SE3 &getT_cam_imu() const;
     void resetGravityDirection();
 
     std::unique_ptr<PoseTransformation> clone() const override;
@@ -105,23 +105,23 @@ namespace dmvio
     int getSymbolInd() const;
     void setSymbolInd(int symbolInd);
 
-    const Sophus::SO3d &getR_dsoW_metricW() const;
+    const dso::SO3 &getR_dsoW_metricW() const;
 
   private:
     std::shared_ptr<bool> optScale, optGravity, optT_cam_imu;
 
     void fillKeyDimMap();
 
-    Sophus::Sim3d T_S_DSO; // Scale: Sim(3) transformation from DSO scale to metric scale.
+    dso::Sim3 T_S_DSO; // Scale: Sim(3) transformation from DSO scale to metric scale.
 
-    Sophus::SO3d R_dsoW_metricW; // The dso world (dsoW) is a rotated version of the metric world (metricW).
+    dso::SO3 R_dsoW_metricW; // The dso world (dsoW) is a rotated version of the metric world (metricW).
     // Note that we represent rotation this way (not with the inverse) because we have a right-sided increment,
     // and this way we can fix the z axis of this rotation.
 
-    Sophus::SE3d T_cam_imu;
+    dso::SE3 T_cam_imu;
 
     bool precomputedValid{false};
-    Sophus::Sim3d precomputed;
+    dso::Sim3 precomputed;
     gtsam::Matrix77 precomputedAdj;
 
     int symbolInd = 0;
@@ -167,7 +167,7 @@ namespace dmvio
 
   private:
     std::shared_ptr<T> transformToIMU;
-    Sophus::SE3d referenceToWorld;
+    dso::SE3 referenceToWorld;
     int keyframeId = -1;
 
     friend gtsam::Matrix66 dmvio::getCoarsePoseDerivative<>(const PoseTransformation::PoseType &pose,

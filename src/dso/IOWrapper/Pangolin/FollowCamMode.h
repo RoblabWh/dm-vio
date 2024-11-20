@@ -25,6 +25,7 @@
 
 #include <pangolin/pangolin.h>
 #include <sophus/se3.hpp>
+#include "util/NumType.h"
 
 namespace dso
 {
@@ -36,23 +37,23 @@ namespace dso
     public:
       FollowCamMode() = default;
 
-      pangolin::OpenGlRenderState *updateVisualizationCam(const Sophus::SE3d &camToWorld,
+      pangolin::OpenGlRenderState *updateVisualizationCam(const SE3 &camToWorld,
                                                           pangolin::OpenGlRenderState &renderStateIn);
 
       void createPangolinSettings();
 
     private:
-      Sophus::SE3d getAverageCamToWorld(const Sophus::SE3d &camToWorld);
+      SE3 getAverageCamToWorld(const SE3 &camToWorld);
 
-      void setOffsetForFollowCam(Sophus::SE3d &camToWorld);
-      void disableOffsetForFollowCam(Sophus::SE3d &camToWorld);
+      void setOffsetForFollowCam(SE3 &camToWorld);
+      void disableOffsetForFollowCam(SE3 &camToWorld);
 
       std::unique_ptr<pangolin::Var<bool>> followCamSetting, followCamTransSetting;
       std::unique_ptr<pangolin::Var<int>> smoothnessSetting;
 
       bool followActive = false;
       bool transActive = false;
-      Sophus::SE3d currOffset;
+      SE3 currOffset;
 
       pangolin::OpenGlRenderState output;
 
