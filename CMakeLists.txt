@@ -1,7 +1,5 @@
-SET(PROJECT_NAME DMVIO)
-
-PROJECT(${PROJECT_NAME})
-CMAKE_MINIMUM_REQUIRED(VERSION 3.1)
+cmake_minimum_required(VERSION 3.5)
+project(DMVIO)
 
 IF(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE RelWithDebInfo)
@@ -22,22 +20,22 @@ find_package(yaml-cpp REQUIRED)
 
 find_package(realsense2 QUIET)
 
-IF(${Boost_VERSION} GREATER_EQUAL 106500)
+if(${Boost_VERSION} GREATER_EQUAL 106500)
   message("Building with stacktrace support.")
   set(STACKTRACE_LIBRARIES dl)
   set(STACKTRACE_DEFINES "-DSTACKTRACE -DBOOST_STACKTRACE_USE_ADDR2LINE")
-ENDIF()
+endif()
 
 # optional libraries
 find_package(LibZip QUIET)
 find_package(Pangolin 0.2 QUIET)
 find_package(OpenCV QUIET)
 
-IF(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-  MESSAGE(Mac OS X specific code)
+if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  message(Mac OS X specific code)
   include_directories(/usr/local/include)
   link_directories(/usr/local/lib)
-ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+endif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 
 # flags
 add_definitions("-DENABLE_SSE")
