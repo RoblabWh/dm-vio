@@ -74,7 +74,7 @@ namespace dmvio
     /** linearize to a GaussianFactor */
     boost::shared_ptr<gtsam::GaussianFactor> linearize(const gtsam::Values &c) const override;
 
-    virtual gtsam::NonlinearFactor::shared_ptr clone() const
+    virtual gtsam::NonlinearFactor::shared_ptr clone() const override
     {
       return boost::static_pointer_cast<gtsam::NonlinearFactor>(
           gtsam::NonlinearFactor::shared_ptr(new PoseTransformationFactor(*this)));
