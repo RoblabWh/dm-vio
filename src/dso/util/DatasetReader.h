@@ -32,37 +32,6 @@
 
 using namespace dso;
 
-inline int getdir(std::string dir, std::vector<std::string> &files)
-{
-  DIR *dp;
-  struct dirent *dirp;
-  if ((dp = opendir(dir.c_str())) == NULL)
-  {
-    return -1;
-  }
-
-  while ((dirp = readdir(dp)) != NULL)
-  {
-    std::string name = std::string(dirp->d_name);
-
-    if (name != "." && name != "..")
-      files.push_back(name);
-  }
-  closedir(dp);
-
-  std::sort(files.begin(), files.end());
-
-  if (dir.at(dir.length() - 1) != '/')
-    dir = dir + "/";
-  for (unsigned int i = 0; i < files.size(); i++)
-  {
-    if (files[i].at(0) != '/')
-      files[i] = dir + files[i];
-  }
-
-  return files.size();
-}
-
 struct PrepImageItem
 {
   int id;
@@ -87,6 +56,8 @@ struct PrepImageItem
 class DatasetReader
 {
 public:
+  virtual ~DatasetReader() = default;
+
   virtual Eigen::VectorXf getOriginalCalib() = 0;
   virtual Eigen::Vector2i getOriginalDimensions() = 0;
 
@@ -117,8 +88,9 @@ public:
   virtual void loadIMUData(std::string imuFile = "") = 0;
 
   // undistorter. [0] always exists, [1-2] only when MT is enabled.
-  Undistort *undistort;
+  Undistort *undistort = nullptr;
 };
 
 // Implementations for DatasetReader
 #include "DatasetReader/dso.h"
+#include "DatasetReader/dai.h"
