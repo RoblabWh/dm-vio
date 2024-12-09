@@ -28,7 +28,7 @@ endif()
 # optional libraries
 find_package(LibZip QUIET)
 find_package(Pangolin 0.2 QUIET)
-find_package(OpenCV QUIET)
+find_package(OpenCV COMPONENTS imgproc imgcodecs videoio highgui QUIET)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   message(Mac OS X specific code)

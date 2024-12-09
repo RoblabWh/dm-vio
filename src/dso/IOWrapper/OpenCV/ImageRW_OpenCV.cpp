@@ -24,26 +24,50 @@
  */
 
 #include "IOWrapper/ImageRW.h"
-#include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc.hpp>
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/videoio.hpp>
+#include <opencv2/highgui.hpp>
 
 namespace dso
 {
 
   namespace IOWrap
   {
+    /**
+     * Read image with imread and fall back to VideoCapture for odd encodings, like lossless JPEG.
+     */
+    cv::Mat readImage(std::string path)
+    {
+      cv::Mat img = cv::imread(path, cv::IMREAD_UNCHANGED);
+      if (img.empty())
+      {
+        auto cap = cv::VideoCapture(path);
+        cap.set(cv::CAP_PROP_CONVERT_RGB, false);
+        cap.read(img);
+      }
+      return img;
+    }
+
     MinimalImageB *readImageBW_8U(std::string filename)
     {
-      cv::Mat m = cv::imread(filename, cv::IMREAD_GRAYSCALE);
+      cv::Mat m = readImage(filename);
       if (m.rows * m.cols == 0)
       {
         printf("cv::imread could not read image %s! this may segfault. \n", filename.c_str());
         return 0;
       }
-      if (m.type() == CV_8UC3)
+      if (m.channels() == 3)
       {
-        // can happen for webp
         cv::cvtColor(m, m, cv::COLOR_BGR2GRAY);
+      }
+      else if (m.channels() == 4)
+      {
+        cv::cvtColor(m, m, cv::COLOR_BGRA2GRAY);
+      }
+      if (m.depth() == CV_16U)
+      {
+        m.convertTo(m, CV_8UC1, 1.0/256.0);
       }
       if (m.type() != CV_8U)
       {
@@ -57,11 +81,19 @@ namespace dso
 
     MinimalImageB3 *readImageRGB_8U(std::string filename)
     {
-      cv::Mat m = cv::imread(filename, cv::IMREAD_COLOR);
+      cv::Mat m = readImage(filename);
       if (m.rows * m.cols == 0)
       {
         printf("cv::imread could not read image %s! this may segfault. \n", filename.c_str());
         return 0;
+      }
+      if (m.channels() == 4)
+      {
+        cv::cvtColor(m, m, cv::COLOR_BGRA2BGR);
+      }
+      if (m.depth() == CV_16U)
+      {
+        m.convertTo(m, CV_8UC3, 1.0/256.0);
       }
       if (m.type() != CV_8UC3)
       {
@@ -75,11 +107,19 @@ namespace dso
 
     MinimalImage<unsigned short> *readImageBW_16U(std::string filename)
     {
-      cv::Mat m = cv::imread(filename, cv::IMREAD_UNCHANGED);
+      cv::Mat m = readImage(filename);
       if (m.rows * m.cols == 0)
       {
         printf("cv::imread could not read image %s! this may segfault. \n", filename.c_str());
         return 0;
+      }
+      if (m.channels() == 3)
+      {
+        cv::cvtColor(m, m, cv::COLOR_BGR2GRAY);
+      }
+      else if (m.channels() == 4)
+      {
+        cv::cvtColor(m, m, cv::COLOR_BGRA2GRAY);
       }
       if (m.type() != CV_16U)
       {
