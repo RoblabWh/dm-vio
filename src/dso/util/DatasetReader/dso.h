@@ -97,7 +97,7 @@ public:
     else
       getdir(path, files);
 
-    undistort = Undistort::makeFromDSOCalibration(calibFile, gammaFile, vignetteFile);
+    undistort = Undistort::makeFromCalibration(calibFile, gammaFile, vignetteFile);
 
     widthOrg = undistort->getOriginalSize()[0];
     heightOrg = undistort->getOriginalSize()[1];

@@ -32,6 +32,8 @@
 #include "IOWrapper/ImageDisplay.h"
 #include "IOWrapper/ImageRW.h"
 #include "util/Undistort.h"
+#include "basalt/calibration/calibration.hpp"
+#include "basalt/serialization/headers_serialization.h"
 
 namespace dso
 {
@@ -169,6 +171,57 @@ namespace dso
     printf("Successfully read photometric calibration!\n");
     valid = true;
   }
+
+  PhotometricUndistorter::PhotometricUndistorter(const Eigen::VectorXd &G_, const Eigen::VectorXd &vignetteMap_, const Eigen::Vector2i &res_)
+  {
+    valid = false;
+    w = res_[0];
+    h = res_[1];
+    vignetteMap = nullptr;
+    vignetteMapInv = nullptr;
+    output = new ImageAndExposure(w, h);
+
+    if (G_.size() == 0 || vignetteMap_.size() == 0)
+    {
+      printf("NO PHOTOMETRIC Calibration!\n");
+    }
+
+    GDepth = G_.size();
+    std::memcpy(G, G_.cast<float>().eval().data(), GDepth * sizeof(float));
+
+    for (int i = 0; i < GDepth - 1; i++)
+    {
+      if (G[i + 1] <= G[i])
+      {
+        printf("PhotometricUndistorter: G invalid! it has to be strictly increasing, but it isnt!\n");
+        return;
+      }
+    }
+
+    float min = G[0];
+    float max = G[GDepth - 1];
+    for (int i = 0; i < GDepth; i++)
+      G[i] = 255.0f * (G[i] - min) / (max - min); // make it to 0..255 => 0..255.
+
+    if (setting_photometricCalibration == 0)
+    {
+      for (int i = 0; i < GDepth; i++)
+        G[i] = 255.0f * i / (float)(GDepth - 1);
+    }
+
+    vignetteMap = new float[vignetteMap_.size()];
+    vignetteMapInv = new float[vignetteMap_.size()];
+
+    const auto v_scaled = vignetteMap_.array() / vignetteMap_.maxCoeff();
+    const auto v_inv_scaled = 1.0 / v_scaled;
+
+    std::memcpy(vignetteMap, v_scaled.cast<float>().eval().data(), v_scaled.size() * sizeof(float));
+    std::memcpy(vignetteMapInv, v_inv_scaled.cast<float>().eval().data(), v_inv_scaled.size() * sizeof(float));
+
+    printf("Successfully read photometric calibration!\n");
+    valid = true;
+  }
+
   PhotometricUndistorter::~PhotometricUndistorter()
   {
     if (vignetteMap != 0)
@@ -250,6 +303,14 @@ namespace dso
       delete[] remapX;
     if (remapY != 0)
       delete[] remapY;
+  }
+
+  Undistort *Undistort::makeFromCalibration(std::string configFilename, std::string gammaFilename, std::string vignetteFilename)
+  {
+    if (configFilename.substr(configFilename.rfind('.')) == ".json")
+      return makeFromBasaltCalibration(configFilename);
+    else
+      return makeFromDSOCalibration(configFilename, gammaFilename, vignetteFilename);
   }
 
   Undistort *Undistort::makeFromDSOCalibration(std::string configFilename, std::string gammaFilename, std::string vignetteFilename)
@@ -385,6 +446,58 @@ namespace dso
         gammaFilename,
         "",
         vignetteFilename);
+
+    return u;
+  }
+
+  Undistort *Undistort::makeFromBasaltCalibration(std::string configFilename)
+  {
+    printf("Reading Calibration from file %s", configFilename.c_str());
+
+    std::ifstream f(configFilename.c_str());
+    if (!f.good())
+    {
+      f.close();
+      printf(" ... not found. Cannot operate without calibration, shutting down.\n");
+      f.close();
+      return 0;
+    }
+
+    printf(" ... found!\n");
+
+    basalt::Calibration<double> bc;
+    cereal::JSONInputArchive ar(f);
+    ar(bc);
+    // TODO has to change for more than one camera
+    const auto &intr = bc.intrinsics.front();
+    const auto &res = bc.resolution.front();
+    const auto &resp = bc.response.front();
+    const auto vign = bc.vignette_maps().front();
+
+    Undistort *u;
+
+    std::visit([&](auto &&arg)
+               {
+      using T = std::decay_t<decltype(arg)>;
+      if constexpr (std::is_same_v<T, basalt::KannalaBrandtCamera4<double>>)
+        u = new UndistortKB(configFilename.c_str(), false);
+      else if constexpr (std::is_same_v<T, basalt::PinholeRadtan8Camera<double>>)
+        u = new UndistortRadTan(configFilename.c_str(), false);
+      else if constexpr (std::is_same_v<T, basalt::PinholeCamera<double>>)
+        u = new UndistortPinhole(configFilename.c_str(), false);
+      else
+      {
+        printf("camera model not supported! exit.\n");
+        exit(1);
+      } }, intr.variant);
+
+    if (!u->isValid())
+    {
+      delete u;
+      return 0;
+    }
+
+    u->photometricUndist = new PhotometricUndistorter(resp, Eigen::Map<const Eigen::VectorXd>(vign.data(), vign.size()), res);
 
     return u;
   }
@@ -739,130 +852,152 @@ namespace dso
     std::ifstream infile(configFileName);
     assert(infile.good());
 
-    std::string l1, l2, l3, l4;
-
-    std::getline(infile, l1);
-    std::getline(infile, l2);
-    std::getline(infile, l3);
-    std::getline(infile, l4);
-
-    // l1 & l2
-    if (nPars == 5) // fov model
+    const std::string cfn(configFileName);
+    if (cfn.substr(cfn.rfind('.')) == ".json")
     {
-      char buf[1000];
-      snprintf(buf, 1000, "%s%%lf %%lf %%lf %%lf %%lf", prefix.c_str());
+      basalt::Calibration<double> bc;
+      cereal::JSONInputArchive ar(infile);
+      ar(bc);
+      // TODO has to change for more than one camera
+      const auto &intr = bc.intrinsics.front();
+      const auto &res = bc.resolution.front();
 
-      if (std::sscanf(l1.c_str(), buf, &parsOrg[0], &parsOrg[1], &parsOrg[2], &parsOrg[3], &parsOrg[4]) == 5 &&
-          std::sscanf(l2.c_str(), "%d %d", &wOrg, &hOrg) == 2)
-      {
-        printf("Input resolution: %d %d\n", wOrg, hOrg);
-        printf("In: %f %f %f %f %f\n",
-               parsOrg[0], parsOrg[1], parsOrg[2], parsOrg[3], parsOrg[4]);
-      }
-      else
-      {
-        printf("Failed to read camera calibration (invalid format?)\nCalibration file: %s\n", configFileName);
-        infile.close();
-        return;
-      }
-    }
-    else if (nPars == 8) // KB, equi & radtan model
-    {
-      char buf[1000];
-      snprintf(buf, 1000, "%s%%lf %%lf %%lf %%lf %%lf %%lf %%lf %%lf %%lf %%lf", prefix.c_str());
+      parsOrg = intr.getParam();
+      wOrg = res[0];
+      hOrg = res[1];
 
-      if (std::sscanf(l1.c_str(), buf,
-                      &parsOrg[0], &parsOrg[1], &parsOrg[2], &parsOrg[3], &parsOrg[4],
-                      &parsOrg[5], &parsOrg[6], &parsOrg[7]) == 8 &&
-          std::sscanf(l2.c_str(), "%d %d", &wOrg, &hOrg) == 2)
-      {
-        printf("Input resolution: %d %d\n", wOrg, hOrg);
-        printf("In: %s%f %f %f %f %f %f %f %f\n",
-               prefix.c_str(),
-               parsOrg[0], parsOrg[1], parsOrg[2], parsOrg[3], parsOrg[4], parsOrg[5], parsOrg[6], parsOrg[7]);
-      }
-      else
-      {
-        printf("Failed to read camera calibration (invalid format?)\nCalibration file: %s\n", configFileName);
-        infile.close();
-        return;
-      }
-    }
-    else
-    {
-      printf("called with invalid number of parameters.... forgot to implement me?\n");
-      infile.close();
-      return;
-    }
-
-    if (parsOrg[2] < 1 && parsOrg[3] < 1)
-    {
-      printf("\n\nFound fx=%f, fy=%f, cx=%f, cy=%f.\n I'm assuming this is the \"relative\" calibration file format,"
-             "and will rescale this by image width / height to fx=%f, fy=%f, cx=%f, cy=%f.\n\n",
-             parsOrg[0], parsOrg[1], parsOrg[2], parsOrg[3],
-             parsOrg[0] * wOrg, parsOrg[1] * hOrg, parsOrg[2] * wOrg - 0.5, parsOrg[3] * hOrg - 0.5);
-
-      // rescale and substract 0.5 offset.
-      // the 0.5 is because I'm assuming the calibration is given such that the pixel at (0,0)
-      // contains the integral over intensity over [0,0]-[1,1], whereas I assume the pixel (0,0)
-      // to contain a sample of the intensity ot [0,0], which is best approximated by the integral over
-      // [-0.5,-0.5]-[0.5,0.5]. Thus, the shift by -0.5.
-      parsOrg[0] = parsOrg[0] * wOrg;
-      parsOrg[1] = parsOrg[1] * hOrg;
-      parsOrg[2] = parsOrg[2] * wOrg - 0.5;
-      parsOrg[3] = parsOrg[3] * hOrg - 0.5;
-    }
-
-    // l3
-    if (l3 == "crop")
-    {
+      // TODO Hardcode crop to 512x512 (other is not supported anyways)
       outputCalibration[0] = -1;
-      printf("Out: Rectify Crop\n");
-    }
-    else if (l3 == "full")
-    {
-      outputCalibration[0] = -2;
-      printf("Out: Rectify Full\n");
-    }
-    else if (l3 == "none")
-    {
-      outputCalibration[0] = -3;
-      printf("Out: No Rectification\n");
-    }
-    else if (std::sscanf(l3.c_str(), "%f %f %f %f %f", &outputCalibration[0], &outputCalibration[1], &outputCalibration[2], &outputCalibration[3], &outputCalibration[4]) == 5)
-    {
-      printf("Out: %f %f %f %f %f\n",
-             outputCalibration[0], outputCalibration[1], outputCalibration[2], outputCalibration[3], outputCalibration[4]);
+      w = 512;
+      h = 512;
     }
     else
     {
-      printf("Out: Failed to Read Output pars... not rectifying.\n");
-      infile.close();
-      return;
-    }
+      std::string l1, l2, l3, l4;
 
-    // l4
-    if (std::sscanf(l4.c_str(), "%d %d", &w, &h) == 2)
-    {
-      if (benchmarkSetting_width != 0)
+      std::getline(infile, l1);
+      std::getline(infile, l2);
+      std::getline(infile, l3);
+      std::getline(infile, l4);
+
+      // l1 & l2
+      if (nPars == 5) // fov model
       {
-        w = benchmarkSetting_width;
-        if (outputCalibration[0] == -3)
-          outputCalibration[0] = -1; // crop instead of none, since probably resolution changed.
+        char buf[1000];
+        snprintf(buf, 1000, "%s%%lf %%lf %%lf %%lf %%lf", prefix.c_str());
+
+        if (std::sscanf(l1.c_str(), buf, &parsOrg[0], &parsOrg[1], &parsOrg[2], &parsOrg[3], &parsOrg[4]) == 5 &&
+            std::sscanf(l2.c_str(), "%d %d", &wOrg, &hOrg) == 2)
+        {
+          printf("Input resolution: %d %d\n", wOrg, hOrg);
+          printf("In: %f %f %f %f %f\n",
+                 parsOrg[0], parsOrg[1], parsOrg[2], parsOrg[3], parsOrg[4]);
+        }
+        else
+        {
+          printf("Failed to read camera calibration (invalid format?)\nCalibration file: %s\n", configFileName);
+          infile.close();
+          return;
+        }
       }
-      if (benchmarkSetting_height != 0)
+      else if (nPars == 8) // KB, equi & radtan model
       {
-        h = benchmarkSetting_height;
-        if (outputCalibration[0] == -3)
-          outputCalibration[0] = -1; // crop instead of none, since probably resolution changed.
+        char buf[1000];
+        snprintf(buf, 1000, "%s%%lf %%lf %%lf %%lf %%lf %%lf %%lf %%lf %%lf %%lf", prefix.c_str());
+
+        if (std::sscanf(l1.c_str(), buf,
+                        &parsOrg[0], &parsOrg[1], &parsOrg[2], &parsOrg[3], &parsOrg[4],
+                        &parsOrg[5], &parsOrg[6], &parsOrg[7]) == 8 &&
+            std::sscanf(l2.c_str(), "%d %d", &wOrg, &hOrg) == 2)
+        {
+          printf("Input resolution: %d %d\n", wOrg, hOrg);
+          printf("In: %s%f %f %f %f %f %f %f %f\n",
+                 prefix.c_str(),
+                 parsOrg[0], parsOrg[1], parsOrg[2], parsOrg[3], parsOrg[4], parsOrg[5], parsOrg[6], parsOrg[7]);
+        }
+        else
+        {
+          printf("Failed to read camera calibration (invalid format?)\nCalibration file: %s\n", configFileName);
+          infile.close();
+          return;
+        }
+      }
+      else
+      {
+        printf("called with invalid number of parameters.... forgot to implement me?\n");
+        infile.close();
+        return;
       }
 
-      printf("Output resolution: %d %d\n", w, h);
-    }
-    else
-    {
-      printf("Out: Failed to Read Output resolution... not rectifying.\n");
-      valid = false;
+      if (parsOrg[2] < 1 && parsOrg[3] < 1)
+      {
+        printf("\n\nFound fx=%f, fy=%f, cx=%f, cy=%f.\n I'm assuming this is the \"relative\" calibration file format,"
+               "and will rescale this by image width / height to fx=%f, fy=%f, cx=%f, cy=%f.\n\n",
+               parsOrg[0], parsOrg[1], parsOrg[2], parsOrg[3],
+               parsOrg[0] * wOrg, parsOrg[1] * hOrg, parsOrg[2] * wOrg - 0.5, parsOrg[3] * hOrg - 0.5);
+
+        // rescale and substract 0.5 offset.
+        // the 0.5 is because I'm assuming the calibration is given such that the pixel at (0,0)
+        // contains the integral over intensity over [0,0]-[1,1], whereas I assume the pixel (0,0)
+        // to contain a sample of the intensity ot [0,0], which is best approximated by the integral over
+        // [-0.5,-0.5]-[0.5,0.5]. Thus, the shift by -0.5.
+        parsOrg[0] = parsOrg[0] * wOrg;
+        parsOrg[1] = parsOrg[1] * hOrg;
+        parsOrg[2] = parsOrg[2] * wOrg - 0.5;
+        parsOrg[3] = parsOrg[3] * hOrg - 0.5;
+      }
+
+      // l3
+      if (l3 == "crop")
+      {
+        outputCalibration[0] = -1;
+        printf("Out: Rectify Crop\n");
+      }
+      else if (l3 == "full")
+      {
+        outputCalibration[0] = -2;
+        printf("Out: Rectify Full\n");
+      }
+      else if (l3 == "none")
+      {
+        outputCalibration[0] = -3;
+        printf("Out: No Rectification\n");
+      }
+      else if (std::sscanf(l3.c_str(), "%f %f %f %f %f", &outputCalibration[0], &outputCalibration[1], &outputCalibration[2], &outputCalibration[3], &outputCalibration[4]) == 5)
+      {
+        printf("Out: %f %f %f %f %f\n",
+               outputCalibration[0], outputCalibration[1], outputCalibration[2], outputCalibration[3], outputCalibration[4]);
+      }
+      else
+      {
+        printf("Out: Failed to Read Output pars... not rectifying.\n");
+        infile.close();
+        return;
+      }
+
+      // l4
+      if (std::sscanf(l4.c_str(), "%d %d", &w, &h) == 2)
+      {
+        if (benchmarkSetting_width != 0)
+        {
+          w = benchmarkSetting_width;
+          if (outputCalibration[0] == -3)
+            outputCalibration[0] = -1; // crop instead of none, since probably resolution changed.
+        }
+        if (benchmarkSetting_height != 0)
+        {
+          h = benchmarkSetting_height;
+          if (outputCalibration[0] == -3)
+            outputCalibration[0] = -1; // crop instead of none, since probably resolution changed.
+        }
+
+        printf("Output resolution: %d %d\n", w, h);
+      }
+      else
+      {
+        printf("Out: Failed to Read Output resolution... not rectifying.\n");
+        valid = false;
+      }
     }
 
     remapX = new float[w * h];

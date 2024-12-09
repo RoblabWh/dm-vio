@@ -35,7 +35,8 @@ namespace dso
   {
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
-    PhotometricUndistorter(std::string file, std::string noiseImage, std::string vignetteImage, int w_, int h_);
+    PhotometricUndistorter(std::string file, std::string noiseImage, std::string vignetteImage, int w, int h);
+    PhotometricUndistorter(const Eigen::VectorXd &G, const Eigen::VectorXd &vignetteMap, const Eigen::Vector2i &res);
     ~PhotometricUndistorter();
 
     // removes readout noise, and converts to irradiance.
@@ -81,7 +82,9 @@ namespace dso
 
     template <typename T>
     ImageAndExposure *undistort(const MinimalImage<T> *image_raw, float exposure = 0, double timestamp = 0, float factor = 1) const;
+    static Undistort *makeFromCalibration(std::string configFilename, std::string gammaFilename, std::string vignetteFilename);
     static Undistort *makeFromDSOCalibration(std::string configFilename, std::string gammaFilename, std::string vignetteFilename);
+    static Undistort *makeFromBasaltCalibration(std::string configFilename);
 
     void loadPhotometricCalibration(std::string file, std::string noiseImage, std::string vignetteImage);
 
