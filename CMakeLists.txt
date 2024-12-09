@@ -12,7 +12,6 @@ set(LIBRARY_OUTPUT_PATH lib)
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 # required libraries
-find_package(SuiteParse REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(Boost COMPONENTS system thread filesystem chrono serialization date_time timer)
 find_package(GTSAM REQUIRED)
@@ -117,13 +116,13 @@ set(dmvio_SOURCE_FILES
   src/live/DatasetSaver.cpp
 )
 
+add_subdirectory(thirdparty/Sophus)
 add_subdirectory(thirdparty/basalt-headers)
 
 include_directories(
   ${PROJECT_SOURCE_DIR}/src
   ${PROJECT_SOURCE_DIR}/src/dso
   ${PROJECT_SOURCE_DIR}/thirdparty/sse2neon
-  ${EIGEN3_INCLUDE_DIR}
   ${GTSAM_INCLUDE_DIR}
 )
 
@@ -173,7 +172,7 @@ endif()
 # compile main library.
 include_directories(${CSPARSE_INCLUDE_DIR} ${CHOLMOD_INCLUDE_DIR} ${YAML_CPP_INCLUDE_DIR})
 add_library(dmvio ${dso_SOURCE_FILES} ${dmvio_SOURCE_FILES} ${dso_opencv_SOURCE_FILES} ${dso_pangolin_SOURCE_FILES})
-target_link_libraries(dmvio basalt::basalt-headers)
+target_link_libraries(dmvio PUBLIC basalt::basalt-headers Eigen3::Eigen Sophus::Sophus)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin") # OSX
   set(BOOST_THREAD_LIBRARY boost_thread-mt)

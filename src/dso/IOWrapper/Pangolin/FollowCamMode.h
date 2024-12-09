@@ -25,6 +25,7 @@
 
 #include <pangolin/pangolin.h>
 #include <sophus/se3.hpp>
+#include <Eigen/Eigenvalues>
 #include "util/NumType.h"
 
 namespace dso
