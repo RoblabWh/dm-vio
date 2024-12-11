@@ -82,7 +82,7 @@ public:
 
   double getTimestamp(int id)
   {
-    //TODO adapt for more cameras
+    // TODO adapt for more cameras
     if (timestamps.front().size() == 0)
       return id * 0.1f;
     if (id >= (int)timestamps.front().size())
@@ -94,7 +94,7 @@ public:
 
   std::string getFilename(int id)
   {
-    //TODO adapt for more cameras
+    // TODO adapt for more cameras
     return files.front()[id];
   }
 
@@ -245,13 +245,13 @@ private:
   MinimalImageB *getImageRaw_internal(int id, int unused)
   {
     assert(!use16Bit);
-    //TODO adapt for more cameras
+    // TODO adapt for more cameras
     return IOWrap::readImageBW_8U(files.front()[id]);
   }
 
   ImageAndExposure *getImage_internal(int id, int unused)
   {
-    //TODO adapt for more cameras
+    // TODO adapt for more cameras
     if (use16Bit)
     {
       MinimalImage<unsigned short> *minimg = IOWrap::readImageBW_16U(files.front()[id]);
@@ -285,39 +285,47 @@ private:
     bool exposures_bad = false;
 
     const auto cams_path = path / "cams";
+    std::vector<std::filesystem::path> cams_meta;
     for (const auto entry : std::filesystem::directory_iterator(cams_path))
     {
       const auto entry_path = entry.path();
       if (entry_path.extension() == ".csv")
       {
-        const auto cam_dir = cams_path / entry_path.stem();
-        auto &cam_files = files.emplace_back();
-        auto &cam_timestamps = timestamps.emplace_back();
-        auto &cam_exposures = exposures.emplace_back();
-        ids.clear();
+        cams_meta.push_back(entry_path);
+      }
+    }
+    std::sort(cams_meta.begin(), cams_meta.end());
+    for (const auto &meta : cams_meta)
+    {
+      const auto cam_dir = cams_path / meta.stem();
+      auto &cam_files = files.emplace_back();
+      auto &cam_timestamps = timestamps.emplace_back();
+      auto &cam_exposures = exposures.emplace_back();
+      ids.clear();
 
-        std::ifstream f(entry_path);
-        std::string line;
-        while (std::getline(f, line))
-        {
-          if (line[0] == '#') continue;
+      std::ifstream f(meta);
+      std::string line;
+      while (std::getline(f, line))
+      {
+        if (line[0] == '#')
+          continue;
 
-          std::stringstream ss(line);
+        std::stringstream ss(line);
 
-          char tmp;
-          std::string filename;
-          int64_t timestamp;
-          int64_t exposure;
+        char tmp;
+        std::string filename;
+        int64_t timestamp;
+        int64_t exposure;
 
-          ss >> timestamp >> tmp >> exposure >> tmp >> filename;
+        ss >> timestamp >> tmp >> exposure >> tmp >> filename;
 
-          if (exposure == 0) exposures_bad = true;
+        if (exposure == 0)
+          exposures_bad = true;
 
-          cam_files.push_back(cam_dir / filename);
-          cam_timestamps.push_back(timestamp * 1e-9);
-          cam_exposures.push_back(exposure * 1e-6);
-          ids.push_back(timestamp);
-        }
+        cam_files.push_back(cam_dir / filename);
+        cam_timestamps.push_back(timestamp * 1e-9);
+        cam_exposures.push_back(exposure * 1e-6);
+        ids.push_back(timestamp);
       }
     }
 
