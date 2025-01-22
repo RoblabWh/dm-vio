@@ -42,7 +42,7 @@ namespace dso
       cv::Mat img = cv::imread(path, cv::IMREAD_UNCHANGED);
       if (img.empty())
       {
-        auto cap = cv::VideoCapture(path);
+        auto cap = cv::VideoCapture(path, cv::CAP_FFMPEG);
         cap.set(cv::CAP_PROP_CONVERT_RGB, false);
         cap.read(img);
       }

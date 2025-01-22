@@ -88,7 +88,7 @@ void exitThread()
     pause();
 }
 
-void run(ImageFolderReader *reader, IOWrap::PangolinDSOViewer *viewer)
+void run(DatasetReader *reader, IOWrap::PangolinDSOViewer *viewer)
 {
 
   if (setting_photometricCalibration > 0 && reader->getPhotometricGamma() == 0)
@@ -384,7 +384,9 @@ int main(int argc, char **argv)
   // hook crtl+C.
   boost::thread exThread = boost::thread(exitThread);
 
-  ImageFolderReader *reader = new ImageFolderReader(source, mainSettings.calib, mainSettings.gammaCalib, mainSettings.vignette, use16Bit, tsFile);
+  //TODO changed this for testing
+  // ImageFolderReader *reader = new ImageFolderReader(source, mainSettings.calib, mainSettings.gammaCalib, mainSettings.vignette, use16Bit, tsFile);
+  DaiFolderReader *reader = new DaiFolderReader(source, mainSettings.calib, use16Bit);
   reader->loadIMUData(imuFile);
   reader->setGlobalCalibration();
 
