@@ -24,6 +24,9 @@
 #include "yaml-cpp/yaml.h"
 #include <iostream>
 #include <fstream>
+#include "dso/util/settings.h"
+#include "basalt/calibration/calibration.hpp"
+#include "basalt/serialization/headers_serialization.h"
 
 using namespace dmvio;
 
@@ -72,27 +75,47 @@ void IMUCalibration::loadFromFile(std::string settingsFilename)
   }
 
   std::cout << "Loading IMU parameter file at: " << settingsFilename << std::endl;
-  YAML::Node config = YAML::LoadFile(settingsFilename)["cam0"];
-  std::vector<std::vector<double>> theVector = config["T_cam_imu"].as<std::vector<std::vector<double>>>();
-  Eigen::Matrix4d matrix;
-  for (int x = 0; x < 4; ++x)
+
+  if (settingsFilename.substr(settingsFilename.rfind('.')) == ".json")
   {
-    for (int y = 0; y < 4; ++y)
+    std::ifstream infile(settingsFilename);
+    assert(infile.good());
+    basalt::Calibration<double> bc;
+    cereal::JSONInputArchive ar(infile);
+    ar(bc);
+    T_cam_imu = bc.T_i_c[dso::multiCameraIndex].inverse();
+
+    // Select worst axis for each value (like done by Kalibr) and infalte them to account for unmodelled effects (like done by TUM-VI)
+    accel_sigma = bc.accel_noise_std.maxCoeff() * 2;
+    gyro_sigma = bc.gyro_noise_std.maxCoeff() * 2;
+    sigma_between_b_a = bc.accel_bias_std.maxCoeff() * 10;
+    sigma_between_b_g = bc.gyro_bias_std.maxCoeff() * 10;
+  }
+  else
+  {
+    YAML::Node config = YAML::LoadFile(settingsFilename)["cam0"];
+    std::vector<std::vector<double>> theVector = config["T_cam_imu"].as<std::vector<std::vector<double>>>();
+    Eigen::Matrix4d matrix;
+    for (int x = 0; x < 4; ++x)
     {
-      matrix(x, y) = theVector[x][y];
+      for (int y = 0; y < 4; ++y)
+      {
+        matrix(x, y) = theVector[x][y];
+      }
+    }
+    T_cam_imu = dso::SE3(matrix);
+
+    if (config["accelerometer_random_walk"] || config["gyroscope_random_walk"] || config["accelerometer_noise_density"] ||
+        config["gyroscope_noise_density"])
+    {
+      std::cout << "WARNING IMPORTANT: Passing IMU noise values via the IMU camchain.yaml file is not supported any"
+                   " more! Please pass them via the settings file or as a commandline parameter!"
+                << std::endl;
     }
   }
-  std::cout << "Used T_cam_imu: " << std::endl
-            << matrix << std::endl;
-  T_cam_imu = dso::SE3(matrix);
 
-  if (config["accelerometer_random_walk"] || config["gyroscope_random_walk"] || config["accelerometer_noise_density"] ||
-      config["gyroscope_noise_density"])
-  {
-    std::cout << "WARNING IMPORTANT: Passing IMU noise values via the IMU camchain.yaml file is not supported any"
-                 " more! Please pass them via the settings file or as a commandline parameter!"
-              << std::endl;
-  }
+  std::cout << "Used T_cam_imu: " << std::endl
+            << T_cam_imu.matrix() << std::endl;
 
   std::cout << "Used noise values: " << sigma_between_b_a << " " << sigma_between_b_g << " " << accel_sigma << " "
             << gyro_sigma << std::endl;

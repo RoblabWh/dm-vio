@@ -188,6 +188,8 @@ void MainSettings::registerArgs(SettingsUtil &set)
   set.registerArg("speed", playbackSpeed);
   set.registerArg("preload", preload);
 
+  set.registerArg("multiCameraIndex", multiCameraIndex);
+
   // We don't register preset and mode as they will be handled in parseArgument.
 
   // Register global settings.

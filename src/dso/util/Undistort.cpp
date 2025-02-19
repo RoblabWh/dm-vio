@@ -209,14 +209,8 @@ namespace dso
         G[i] = 255.0f * i / (float)(GDepth - 1);
     }
 
-    vignetteMap = new float[vignetteMap_.size()];
     vignetteMapInv = new float[vignetteMap_.size()];
-
-    const auto v_scaled = vignetteMap_.array() / vignetteMap_.maxCoeff();
-    const auto v_inv_scaled = 1.0 / v_scaled;
-
-    std::memcpy(vignetteMap, v_scaled.cast<float>().eval().data(), v_scaled.size() * sizeof(float));
-    std::memcpy(vignetteMapInv, v_inv_scaled.cast<float>().eval().data(), v_inv_scaled.size() * sizeof(float));
+    std::memcpy(vignetteMapInv, vignetteMap_.cast<float>().eval().data(), vignetteMap_.size() * sizeof(float));
 
     printf("Successfully read photometric calibration!\n");
     valid = true;
@@ -468,11 +462,10 @@ namespace dso
     basalt::Calibration<double> bc;
     cereal::JSONInputArchive ar(f);
     ar(bc);
-    // TODO has to change for more than one camera
-    const auto &intr = bc.intrinsics.front();
-    const auto &res = bc.resolution.front();
-    const auto &resp = bc.response.front();
-    const auto vign = bc.vignette_maps().front();
+    const auto &intr = bc.intrinsics[multiCameraIndex];
+    const auto &res = bc.resolution[multiCameraIndex];
+    const auto &resp = bc.response[multiCameraIndex];
+    const auto vign = bc.vignette_map(multiCameraIndex);
 
     Undistort *u;
 
@@ -858,9 +851,8 @@ namespace dso
       basalt::Calibration<double> bc;
       cereal::JSONInputArchive ar(infile);
       ar(bc);
-      // TODO has to change for more than one camera
-      const auto &intr = bc.intrinsics.front();
-      const auto &res = bc.resolution.front();
+      const auto &intr = bc.intrinsics[multiCameraIndex];
+      const auto &res = bc.resolution[multiCameraIndex];
 
       parsOrg = intr.getParam();
       wOrg = res[0];

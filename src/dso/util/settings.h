@@ -161,6 +161,8 @@ namespace dso
 
   extern bool setting_debugout_runquiet;
 
+  extern int multiCameraIndex;
+
   extern bool disableAllDisplay;
 
   extern bool debugSaveImages;

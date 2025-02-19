@@ -48,7 +48,7 @@ public:
     width = undistort->getSize()[0];
     height = undistort->getSize()[1];
 
-    printf("DaiFolderReader: got %d files in %s!\n", (int)files.front().size(), path.c_str());
+    printf("DaiFolderReader: got %d files in %s!\n", (int)files[multiCameraIndex].size(), path.c_str());
   }
 
   Eigen::VectorXf getOriginalCalib()
@@ -77,25 +77,25 @@ public:
 
   int getNumImages()
   {
-    return files.front().size();
+    return files[multiCameraIndex].size();
   }
 
   double getTimestamp(int id)
   {
     // TODO adapt for more cameras
-    if (timestamps.front().size() == 0)
+    if (timestamps[multiCameraIndex].size() == 0)
       return id * 0.1f;
-    if (id >= (int)timestamps.front().size())
+    if (id >= (int)timestamps[multiCameraIndex].size())
       return 0;
     if (id < 0)
       return 0;
-    return timestamps.front()[id];
+    return timestamps[multiCameraIndex][id];
   }
 
   std::string getFilename(int id)
   {
     // TODO adapt for more cameras
-    return files.front()[id];
+    return files[multiCameraIndex][id];
   }
 
   void prepImage(int id, bool as8U = false)
@@ -246,7 +246,7 @@ private:
   {
     assert(!use16Bit);
     // TODO adapt for more cameras
-    return IOWrap::readImageBW_8U(files.front()[id]);
+    return IOWrap::readImageBW_8U(files[multiCameraIndex][id]);
   }
 
   ImageAndExposure *getImage_internal(int id, int unused)
@@ -254,12 +254,12 @@ private:
     // TODO adapt for more cameras
     if (use16Bit)
     {
-      MinimalImage<unsigned short> *minimg = IOWrap::readImageBW_16U(files.front()[id]);
+      MinimalImage<unsigned short> *minimg = IOWrap::readImageBW_16U(files[multiCameraIndex][id]);
       assert(minimg);
       ImageAndExposure *ret2 = undistort->undistort<unsigned short>(
           minimg,
-          (exposures.size() == 0 ? 1.0f : exposures.front()[id]),
-          (timestamps.size() == 0 ? 0.0 : timestamps.front()[id]),
+          (exposures.size() == 0 ? 1.0f : exposures[multiCameraIndex][id]),
+          (timestamps.size() == 0 ? 0.0 : timestamps[multiCameraIndex][id]),
           1.0f / 256.0f);
       delete minimg;
       return ret2;
@@ -269,8 +269,8 @@ private:
       MinimalImageB *minimg = getImageRaw_internal(id, 0);
       ImageAndExposure *ret2 = undistort->undistort<unsigned char>(
           minimg,
-          (exposures.size() == 0 ? 1.0f : exposures.front()[id]),
-          (timestamps.size() == 0 ? 0.0 : timestamps.front()[id]));
+          (exposures.size() == 0 ? 1.0f : exposures[multiCameraIndex][id]),
+          (timestamps.size() == 0 ? 0.0 : timestamps[multiCameraIndex][id]));
       delete minimg;
       return ret2;
     }
@@ -335,7 +335,7 @@ private:
       exposures.clear();
     }
 
-    printf("got %d images and %d timestamps and %d exposures.!\n", (int)getNumImages(), (int)timestamps.front().size(), (int)exposures.front().size());
+    printf("got %d images and %d timestamps and %d exposures.!\n", (int)getNumImages(), (int)timestamps[multiCameraIndex].size(), (int)exposures[multiCameraIndex].size());
   }
 
   std::map<long long, dmvio::GTData> gtData;
