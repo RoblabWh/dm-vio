@@ -27,6 +27,7 @@
 #include "util/MinimalImage.h"
 #include "util/NumType.h"
 #include "Eigen/Core"
+#include "basalt/calibration/calibration.hpp"
 
 namespace dso
 {
@@ -156,6 +157,18 @@ namespace dso
     UndistortKB(const char *configFileName, bool noprefix);
     ~UndistortKB();
     void distortCoordinates(float *in_x, float *in_y, float *out_x, float *out_y, int n) const;
+  };
+
+  class UndistortBasalt : public Undistort
+  {
+  public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    UndistortBasalt(const char *configFileName);
+    ~UndistortBasalt();
+    void distortCoordinates(float *in_x, float *in_y, float *out_x, float *out_y, int n) const;
+
+  private:
+    basalt::Calibration<double> calib;
   };
 
 }

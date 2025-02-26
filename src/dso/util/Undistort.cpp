@@ -32,7 +32,6 @@
 #include "IOWrapper/ImageDisplay.h"
 #include "IOWrapper/ImageRW.h"
 #include "util/Undistort.h"
-#include "basalt/calibration/calibration.hpp"
 #include "basalt/serialization/headers_serialization.h"
 
 namespace dso
@@ -447,52 +446,7 @@ namespace dso
   Undistort *Undistort::makeFromBasaltCalibration(std::string configFilename)
   {
     printf("Reading Calibration from file %s", configFilename.c_str());
-
-    std::ifstream f(configFilename.c_str());
-    if (!f.good())
-    {
-      f.close();
-      printf(" ... not found. Cannot operate without calibration, shutting down.\n");
-      f.close();
-      return 0;
-    }
-
-    printf(" ... found!\n");
-
-    basalt::Calibration<double> bc;
-    cereal::JSONInputArchive ar(f);
-    ar(bc);
-    const auto &intr = bc.intrinsics[multiCameraIndex];
-    const auto &res = bc.resolution[multiCameraIndex];
-    const auto &resp = bc.response[multiCameraIndex];
-    const auto vign = bc.vignette_map(multiCameraIndex);
-
-    Undistort *u;
-
-    std::visit([&](auto &&arg)
-               {
-      using T = std::decay_t<decltype(arg)>;
-      if constexpr (std::is_same_v<T, basalt::KannalaBrandtCamera4<double>>)
-        u = new UndistortKB(configFilename.c_str(), false);
-      else if constexpr (std::is_same_v<T, basalt::PinholeRadtan8Camera<double>>)
-        u = new UndistortRadTan(configFilename.c_str(), false);
-      else if constexpr (std::is_same_v<T, basalt::PinholeCamera<double>>)
-        u = new UndistortPinhole(configFilename.c_str(), false);
-      else
-      {
-        printf("camera model not supported! exit.\n");
-        exit(1);
-      } }, intr.variant);
-
-    if (!u->isValid())
-    {
-      delete u;
-      return 0;
-    }
-
-    u->photometricUndist = new PhotometricUndistorter(resp, Eigen::Map<const Eigen::VectorXd>(vign.data(), vign.size()), res);
-
-    return u;
+    return new UndistortBasalt(configFilename.c_str());
   }
 
   void Undistort::loadPhotometricCalibration(std::string file, std::string noiseImage, std::string vignetteImage)
@@ -1331,4 +1285,52 @@ namespace dso
     }
   }
 
+  UndistortBasalt::UndistortBasalt(const char *configFileName)
+  {
+    std::ifstream configFile(configFileName);
+    if (!configFile.good())
+    {
+      printf(" ... not found. Cannot operate without calibration, shutting down.\n");
+      configFile.close();
+      return;
+    }
+    printf(" ... found!\n");
+
+    printf("Creating Basalt undistorter\n");
+
+    cereal::JSONInputArchive archive(configFile);
+    archive(calib);
+
+    readFromFile(configFileName, 0);
+
+    const auto vign = calib.vignette_map(multiCameraIndex);
+    photometricUndist = new PhotometricUndistorter(calib.response[multiCameraIndex], Eigen::Map<const Eigen::VectorXd>(vign.data(), vign.size()), calib.resolution[multiCameraIndex]);
+  }
+  UndistortBasalt::~UndistortBasalt()
+  {
+  }
+
+  void UndistortBasalt::distortCoordinates(float *in_x, float *in_y, float *out_x, float *out_y, int n) const
+  {
+    float ofx = K(0, 0);
+    float ofy = K(1, 1);
+    float ocx = K(0, 2);
+    float ocy = K(1, 2);
+
+    for (int i = 0; i < n; i++)
+    {
+      float x = in_x[i];
+      float y = in_y[i];
+      float ix = (x - ocx) / ofx;
+      float iy = (y - ocy) / ofy;
+
+      Eigen::Vector3d p3d;
+      p3d << ix, iy, 1;
+      Eigen::Vector2d p2d;
+      calib.intrinsics[multiCameraIndex].project(p3d, p2d);
+
+      out_x[i] = p2d.x();
+      out_y[i] = p2d.y();
+    }
+  }
 }
