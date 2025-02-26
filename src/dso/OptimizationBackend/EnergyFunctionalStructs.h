@@ -44,7 +44,7 @@ namespace dso
   class EFResidual
   {
   public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     inline EFResidual(PointFrameResidual *org, EFPoint *point_, EFFrame *host_, EFFrame *target_) : data(org), point(point_), host(host_), target(target_)
     {
@@ -94,7 +94,7 @@ namespace dso
   class EFPoint
   {
   public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     EFPoint(PointHessian *d, EFFrame *host_) : data(d), host(host_)
     {
       takeData();
@@ -129,7 +129,7 @@ namespace dso
   class EFFrame
   {
   public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     EFFrame(FrameHessian *d) : data(d)
     {
       takeData();

@@ -31,7 +31,7 @@ namespace dso
   class ImageAndExposure
   {
   public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     float *image; // irradiance. between 0 and 256
     int w, h;     // width and height;
     double timestamp;

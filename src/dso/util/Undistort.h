@@ -35,7 +35,7 @@ namespace dso
   class PhotometricUndistorter
   {
   public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     PhotometricUndistorter(std::string file, std::string noiseImage, std::string vignetteImage, int w, int h);
     PhotometricUndistorter(const Eigen::VectorXd &G, const Eigen::VectorXd &vignetteMap, const Eigen::Vector2i &res);
     ~PhotometricUndistorter();
@@ -70,7 +70,7 @@ namespace dso
   class Undistort
   {
   public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     virtual ~Undistort();
 
     virtual void distortCoordinates(float *in_x, float *in_y, float *out_x, float *out_y, int n) const = 0;
@@ -113,7 +113,7 @@ namespace dso
   class UndistortFOV : public Undistort
   {
   public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     UndistortFOV(const char *configFileName, bool noprefix);
     ~UndistortFOV();
@@ -123,7 +123,7 @@ namespace dso
   class UndistortRadTan : public Undistort
   {
   public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     UndistortRadTan(const char *configFileName, bool noprefix);
     ~UndistortRadTan();
     void distortCoordinates(float *in_x, float *in_y, float *out_x, float *out_y, int n) const;
@@ -132,7 +132,7 @@ namespace dso
   class UndistortEquidistant : public Undistort
   {
   public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     UndistortEquidistant(const char *configFileName, bool noprefix);
     ~UndistortEquidistant();
     void distortCoordinates(float *in_x, float *in_y, float *out_x, float *out_y, int n) const;
@@ -141,7 +141,7 @@ namespace dso
   class UndistortPinhole : public Undistort
   {
   public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     UndistortPinhole(const char *configFileName, bool noprefix);
     ~UndistortPinhole();
     void distortCoordinates(float *in_x, float *in_y, float *out_x, float *out_y, int n) const;
@@ -153,7 +153,7 @@ namespace dso
   class UndistortKB : public Undistort
   {
   public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     UndistortKB(const char *configFileName, bool noprefix);
     ~UndistortKB();
     void distortCoordinates(float *in_x, float *in_y, float *out_x, float *out_y, int n) const;

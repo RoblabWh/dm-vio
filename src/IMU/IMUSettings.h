@@ -133,7 +133,6 @@ namespace dmvio
 
     // Currently not read from settings.
     gtsam::Vector3 gravity = (gtsam::Vector(3) << 0, 0, -9.8082).finished();
-    ;
 
   private:
     void initDefault();

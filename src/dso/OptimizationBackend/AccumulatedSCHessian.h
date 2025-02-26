@@ -38,7 +38,7 @@ namespace dso
   class AccumulatedSCHessianSSE
   {
   public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     inline AccumulatedSCHessianSSE()
     {
       for (int i = 0; i < NUM_THREADS; i++)

@@ -43,7 +43,7 @@ namespace dso
   class CoarseTracker
   {
   public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     CoarseTracker(int w, int h, dmvio::IMUIntegration &imuIntegration);
     ~CoarseTracker();
@@ -126,7 +126,7 @@ namespace dso
   class CoarseDistanceMap
   {
   public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     CoarseDistanceMap(int w, int h);
     ~CoarseDistanceMap();

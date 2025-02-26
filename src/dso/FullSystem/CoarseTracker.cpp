@@ -762,12 +762,12 @@ namespace dso
 
     bool trackingGood = true;
 
-    if ((setting_affineOptModeA != 0 && (fabsf(aff_g2l_out.a) > 1.2)) || (setting_affineOptModeB != 0 && (fabsf(aff_g2l_out.b) > 200)))
+    if ((setting_affineOptModeA != 0 && (fabs(aff_g2l_out.a) > 1.2)) || (setting_affineOptModeB != 0 && (fabs(aff_g2l_out.b) > 200)))
       trackingGood = false;
 
     Vec2f relAff = AffLight::fromToVecExposure(lastRef->ab_exposure, newFrame->ab_exposure, lastRef_aff_g2l, aff_g2l_out).cast<float>();
 
-    if ((setting_affineOptModeA == 0 && (fabsf(logf((float)relAff[0])) > 1.5)) || (setting_affineOptModeB == 0 && (fabsf((float)relAff[1]) > 200)))
+    if ((setting_affineOptModeA == 0 && (fabsf(logf(relAff[0])) > 1.5)) || (setting_affineOptModeB == 0 && (fabsf(relAff[1]) > 200)))
       trackingGood = false;
 
     if (setting_affineOptModeA < 0)

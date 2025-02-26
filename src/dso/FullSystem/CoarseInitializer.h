@@ -41,7 +41,7 @@ namespace dso
   struct Pnt
   {
   public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     // index in jacobian. never changes (actually, there is no reason why).
     float u, v;
 
@@ -77,7 +77,7 @@ namespace dso
   class CoarseInitializer
   {
   public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     CoarseInitializer(int ww, int hh);
     ~CoarseInitializer();
 

@@ -73,7 +73,7 @@ namespace dso
 
   struct FrameFramePrecalc
   {
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     // static values
     static int instanceCounter;
     FrameHessian *host;   // defines row
@@ -101,7 +101,7 @@ namespace dso
 
   struct FrameHessian
   {
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     EFFrame *efFrame;
 
     // constant info & pre-calculated values
@@ -285,7 +285,7 @@ namespace dso
 
   struct CalibHessian
   {
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     static int instanceCounter;
 
     VecC value_zero;
@@ -387,7 +387,7 @@ namespace dso
   // hessian component associated with one point.
   struct PointHessian
   {
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     static int instanceCounter;
     EFPoint *efPoint;
 

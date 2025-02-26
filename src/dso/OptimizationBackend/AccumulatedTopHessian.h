@@ -38,7 +38,7 @@ namespace dso
   class AccumulatedTopHessianSSE
   {
   public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     inline AccumulatedTopHessianSSE()
     {
       for (int tid = 0; tid < NUM_THREADS; tid++)

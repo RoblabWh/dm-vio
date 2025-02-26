@@ -35,7 +35,7 @@ namespace dso
   class AccumulatorXX
   {
   public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     Eigen::Matrix<float, i, j> A;
     Eigen::Matrix<float, i, j> A1k;
@@ -88,7 +88,7 @@ namespace dso
   class Accumulator11
   {
   public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     float A;
     size_t num;
@@ -172,7 +172,7 @@ namespace dso
   class AccumulatorX
   {
   public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     Eigen::Matrix<float, i, 1> A;
     Eigen::Matrix<float, i, 1> A1k;
@@ -232,7 +232,7 @@ namespace dso
   class Accumulator14
   {
   public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     Mat1414f H;
     Vec14f b;
@@ -783,7 +783,7 @@ namespace dso
   class AccumulatorApprox
   {
   public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     Mat1313f H;
     size_t num;
@@ -1118,7 +1118,7 @@ namespace dso
   class Accumulator9
   {
   public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     Mat99f H;
     Vec9f b;
