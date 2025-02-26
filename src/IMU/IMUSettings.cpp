@@ -85,11 +85,11 @@ void IMUCalibration::loadFromFile(std::string settingsFilename)
     ar(bc);
     T_cam_imu = bc.T_i_c[dso::multiCameraIndex].inverse();
 
-    // Select worst axis for each value (like done by Kalibr) and infalte them to account for unmodelled effects (like done by TUM-VI)
-    accel_sigma = bc.accel_noise_std.maxCoeff() * 2;
-    gyro_sigma = bc.gyro_noise_std.maxCoeff() * 2;
-    sigma_between_b_a = bc.accel_bias_std.maxCoeff() * 10;
-    sigma_between_b_g = bc.gyro_bias_std.maxCoeff() * 10;
+    // Select worst axis for each value (like done by Kalibr) and infalte them to account for unmodelled effects (like done by TUM-VI & DM-VIO)
+    accel_sigma = bc.accel_noise_std.maxCoeff() * 160;
+    gyro_sigma = bc.gyro_noise_std.maxCoeff() * 160;
+    sigma_between_b_a = bc.accel_bias_std.maxCoeff() * 500;
+    sigma_between_b_g = bc.gyro_bias_std.maxCoeff() * 500;
   }
   else
   {
