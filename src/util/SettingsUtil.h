@@ -27,7 +27,9 @@
 #include <iostream>
 #include <functional>
 #include <assert.h>
+#ifdef WITH_PANGOLIN
 #include <pangolin/var/var.h>
+#endif
 
 // This file contains utils for settings.
 // Most settings should be in (potentially nested) settings classes which.
@@ -62,6 +64,7 @@ namespace dmvio
     stream << *typedPointer;
   }
 
+#ifdef WITH_PANGOLIN
   // Class for a setting that can be set by the GUI in Pangolin.
   class PangolinSettingVar
   {
@@ -112,6 +115,7 @@ namespace dmvio
     bool boolConstr, toggle;
     double min, max;
   };
+#endif
 
   class SettingsUtil
   {
@@ -144,22 +148,28 @@ namespace dmvio
     void registerArg(std::string name, T &arg, bool toggle)
     {
       registerArg(name, arg);
+#ifdef WITH_PANGOLIN
       parameters.at(name).pangolinSetting.reset(new PangolinSetting<T>(name, &arg, toggle));
+#endif
     }
 
     template <typename T>
     void registerArg(std::string name, T &arg, double min, double max)
     {
       registerArg(name, arg);
+#ifdef WITH_PANGOLIN
       parameters.at(name).pangolinSetting.reset(new PangolinSetting<T>(name, &arg, min, max));
+#endif
     }
 
     // Dump all settings to file.
     void printAllSettings(std::ostream &stream);
 
+#ifdef WITH_PANGOLIN
     // Should be called from Pangolin thread.
     void createPangolinSettings();
     void updatePangolinSettings();
+#endif
 
   private:
     struct Parameter
@@ -175,7 +185,9 @@ namespace dmvio
       bool loadedFromCommandLine{
           false}; // Used to make sure that we don't overwrite parameters set using commandline when reading from yaml.
 
+#ifdef WITH_PANGOLIN
       std::unique_ptr<PangolinSettingVar> pangolinSetting;
+#endif
     };
     std::map<std::string, Parameter> parameters;
   };

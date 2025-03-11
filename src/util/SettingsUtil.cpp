@@ -78,6 +78,7 @@ void dmvio::SettingsUtil::printAllSettings(std::ostream &stream)
   }
 }
 
+#ifdef WITH_PANGOLIN
 void dmvio::SettingsUtil::createPangolinSettings()
 {
   for (auto &&param : parameters)
@@ -101,3 +102,4 @@ void dmvio::SettingsUtil::updatePangolinSettings()
     }
   }
 }
+#endif

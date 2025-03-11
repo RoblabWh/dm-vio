@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(DMVIO)
+project(dmvio)
 
 IF(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE RelWithDebInfo)
@@ -13,7 +13,7 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 # required libraries
 find_package(Eigen3 REQUIRED)
-find_package(Boost COMPONENTS system thread filesystem chrono serialization date_time timer)
+find_package(Boost COMPONENTS system thread)
 find_package(GTSAM REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
@@ -42,7 +42,7 @@ set(CMAKE_CXX_FLAGS
   "${SSE_FLAGS}"
 )
 set(CMAKE_CXX_FLAGS_DEBUG
-  "-O2 -g -fno-omit-frame-pointer -DEIGEN_INITIALIZE_MATRICES_WITH_NAN -DDEBUG ${STACKTRACE_DEFINES}"
+  "-Og -g -fno-omit-frame-pointer -DEIGEN_INITIALIZE_MATRICES_WITH_NAN -DDEBUG ${STACKTRACE_DEFINES}"
 )
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO
   "-O3 -g -fno-omit-frame-pointer ${STACKTRACE_DEFINES}"
@@ -119,13 +119,6 @@ set(dmvio_SOURCE_FILES
 add_subdirectory(thirdparty/Sophus)
 add_subdirectory(thirdparty/basalt-headers)
 
-include_directories(
-  ${PROJECT_SOURCE_DIR}/src
-  ${PROJECT_SOURCE_DIR}/src/dso
-  ${PROJECT_SOURCE_DIR}/thirdparty/sse2neon
-  ${GTSAM_INCLUDE_DIR}
-)
-
 # decide if we have pangolin
 if(Pangolin_FOUND)
   message("--- found PANGOLIN, compiling with pangolin library.")
@@ -134,12 +127,11 @@ if(Pangolin_FOUND)
     ${DSO_SOURCE_DIR}/IOWrapper/Pangolin/KeyFrameDisplay.cpp
     ${DSO_SOURCE_DIR}/IOWrapper/Pangolin/PangolinDSOViewer.cpp
     ${DSO_SOURCE_DIR}/IOWrapper/Pangolin/FollowCamMode.cpp)
-  set(HAS_PANGOLIN 1)
+  add_compile_definitions(WITH_PANGOLIN)
 else()
   message("--- could not find PANGOLIN, not compiling with pangolin library.")
   message("    this means there will be no 3D display / GUI available for dmvio_dataset.")
   set(dso_pangolin_SOURCE_FILES)
-  set(HAS_PANGOLIN 0)
 endif()
 
 # decide if we have openCV
@@ -149,14 +141,14 @@ if(OpenCV_FOUND)
   set(dso_opencv_SOURCE_FILES
     ${DSO_SOURCE_DIR}/IOWrapper/OpenCV/ImageDisplay_OpenCV.cpp
     ${DSO_SOURCE_DIR}/IOWrapper/OpenCV/ImageRW_OpenCV.cpp)
-  set(HAS_OPENCV 1)
+  set(OPENCV_LIBRARY opencv_imgproc opencv_imgcodecs opencv_videoio opencv_highgui)
 else()
   message("--- could not find OpenCV, not compiling with opencv library.")
   message("    this means there will be no image display, and image read / load functionality.")
   set(dso_opencv_SOURCE_FILES
     ${DSO_SOURCE_DIR}/IOWrapper/ImageDisplay_dummy.cpp
     ${DSO_SOURCE_DIR}/IOWrapper/ImageRW_dummy.cpp)
-  set(HAS_OPENCV 0)
+    set(OPENCV_LIBRARY)
 endif()
 
 # decide if we have ziplib.
@@ -169,22 +161,29 @@ else()
   set(LIBZIP_LIBRARY "")
 endif()
 
-# compile main library.
-include_directories(${CSPARSE_INCLUDE_DIR} ${CHOLMOD_INCLUDE_DIR} ${YAML_CPP_INCLUDE_DIR})
-add_library(dmvio ${dso_SOURCE_FILES} ${dmvio_SOURCE_FILES} ${dso_opencv_SOURCE_FILES} ${dso_pangolin_SOURCE_FILES})
-target_link_libraries(dmvio PUBLIC basalt::basalt-headers Eigen3::Eigen Sophus::Sophus)
-
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin") # OSX
   set(BOOST_THREAD_LIBRARY boost_thread-mt)
 else()
   set(BOOST_THREAD_LIBRARY boost_thread)
 endif()
 
+# compile main library.
+include_directories(${CSPARSE_INCLUDE_DIR} ${CHOLMOD_INCLUDE_DIR})
+add_library(dmvio ${dso_SOURCE_FILES} ${dmvio_SOURCE_FILES} ${dso_opencv_SOURCE_FILES} ${dso_pangolin_SOURCE_FILES})
+target_link_libraries(dmvio PUBLIC gtsam basalt::basalt-headers Eigen3::Eigen Sophus::Sophus yaml-cpp ${BOOST_THREAD_LIBRARY} ${OPENCV_LIBRARY})
+target_include_directories(dmvio
+  PUBLIC
+  ${PROJECT_SOURCE_DIR}/src
+  ${PROJECT_SOURCE_DIR}/src/dso
+  ${PROJECT_SOURCE_DIR}/thirdparty/sse2neon
+)
+set_property(TARGET dmvio PROPERTY POSITION_INDEPENDENT_CODE ON)
+
 # build main executable (only if we have both OpenCV and Pangolin)
 if(OpenCV_FOUND AND Pangolin_FOUND)
   message("--- compiling dmvio_dataset.")
   add_executable(dmvio_dataset ${PROJECT_SOURCE_DIR}/src/main_dmvio_dataset.cpp)
-  set(DMVIO_LINKED_LIBRARIES boost_system cxsparse ${BOOST_THREAD_LIBRARY} ${LIBZIP_LIBRARY} ${Pangolin_LIBRARIES} ${OpenCV_LIBS} gtsam ${YAML_CPP_LIBRARIES} ${STACKTRACE_LIBRARIES})
+  set(DMVIO_LINKED_LIBRARIES boost_system cxsparse ${LIBZIP_LIBRARY} ${Pangolin_LIBRARIES} ${STACKTRACE_LIBRARIES})
   target_link_libraries(dmvio_dataset dmvio ${DMVIO_LINKED_LIBRARIES})
 
   if(realsense2_FOUND)
