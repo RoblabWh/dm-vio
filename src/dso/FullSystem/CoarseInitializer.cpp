@@ -38,8 +38,6 @@
 #include "FullSystem/PixelSelector2.h"
 #include "util/nanoflann.h"
 
-#include <opencv2/highgui/highgui.hpp>
-
 #if !defined(__SSE3__) && !defined(__SSE2__) && !defined(__SSE1__)
 #include "SSE2NEON.h"
 #endif

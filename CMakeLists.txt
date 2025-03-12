@@ -16,11 +16,11 @@ find_package(Eigen3 REQUIRED)
 find_package(Boost COMPONENTS system thread)
 find_package(GTSAM REQUIRED)
 find_package(yaml-cpp REQUIRED)
+find_package(OpenCV COMPONENTS imgproc imgcodecs videoio REQUIRED)
 
-find_package(realsense2 QUIET)
 
 if(${Boost_VERSION} GREATER_EQUAL 106500)
-  message("Building with stacktrace support.")
+  message(STATUS "Building with stacktrace support.")
   set(STACKTRACE_LIBRARIES dl)
   set(STACKTRACE_DEFINES "-DSTACKTRACE -DBOOST_STACKTRACE_USE_ADDR2LINE")
 endif()
@@ -28,10 +28,11 @@ endif()
 # optional libraries
 find_package(LibZip QUIET)
 find_package(Pangolin 0.2 QUIET)
-find_package(OpenCV COMPONENTS imgproc imgcodecs videoio highgui QUIET)
+find_package(OpenCV COMPONENTS highgui QUIET)
+find_package(realsense2 QUIET)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-  message(Mac OS X specific code)
+  message(STATUS "Mac OS X specific code")
   include_directories(/usr/local/include)
   link_directories(/usr/local/lib)
 endif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
@@ -119,9 +120,17 @@ set(dmvio_SOURCE_FILES
 add_subdirectory(thirdparty/Sophus)
 add_subdirectory(thirdparty/basalt-headers)
 
+option(BUILD_EXECUTABLES "Build executables" ON)
+option(WITH_OPENCV "Build with OpenCV" ON)
+option(WITH_PANGOLIN "Build with Pangolin" ON)
+if(NOT WITH_OPENCV OR NOT WITH_PANGOLIN)
+  message(STATUS "Disabling executables since either OpenCV or Pangolin is disabled.")
+  set(BUILD_EXECUTABLES OFF)
+endif()
+
 # decide if we have pangolin
-if(Pangolin_FOUND)
-  message("--- found PANGOLIN, compiling with pangolin library.")
+if(Pangolin_FOUND AND WITH_PANGOLIN)
+  message(STATUS "--- found PANGOLIN, compiling with pangolin library.")
   include_directories(${Pangolin_INCLUDE_DIRS})
   set(dso_pangolin_SOURCE_FILES
     ${DSO_SOURCE_DIR}/IOWrapper/Pangolin/KeyFrameDisplay.cpp
@@ -129,35 +138,34 @@ if(Pangolin_FOUND)
     ${DSO_SOURCE_DIR}/IOWrapper/Pangolin/FollowCamMode.cpp)
   add_compile_definitions(WITH_PANGOLIN)
 else()
-  message("--- could not find PANGOLIN, not compiling with pangolin library.")
-  message("    this means there will be no 3D display / GUI available for dmvio_dataset.")
-  set(dso_pangolin_SOURCE_FILES)
+  message(STATUS "--- could not find PANGOLIN, not compiling with pangolin library.")
+  message(STATUS "    this means there will be no 3D display / GUI available for dmvio_dataset.")
 endif()
 
 # decide if we have openCV
-if(OpenCV_FOUND)
-  message("--- found OpenCV, compiling with opencv library.")
+set(OPENCV_LIBRARY opencv_imgproc opencv_imgcodecs opencv_videoio)
+if(TARGET opencv_highgui AND WITH_OPENCV)
+  message(STATUS "--- found OpenCV, compiling with opencv library.")
   include_directories(${OpenCV_INCLUDE_DIRS})
   set(dso_opencv_SOURCE_FILES
     ${DSO_SOURCE_DIR}/IOWrapper/OpenCV/ImageDisplay_OpenCV.cpp
     ${DSO_SOURCE_DIR}/IOWrapper/OpenCV/ImageRW_OpenCV.cpp)
-  set(OPENCV_LIBRARY opencv_imgproc opencv_imgcodecs opencv_videoio opencv_highgui)
+    set(OPENCV_LIBRARY ${OPENCV_LIBRARY} opencv_highgui)
 else()
-  message("--- could not find OpenCV, not compiling with opencv library.")
-  message("    this means there will be no image display, and image read / load functionality.")
+  message(STATUS "--- could not find OpenCV, not compiling with opencv library.")
+  message(STATUS "    this means there will be no image display, and image read / load functionality.")
   set(dso_opencv_SOURCE_FILES
     ${DSO_SOURCE_DIR}/IOWrapper/ImageDisplay_dummy.cpp
     ${DSO_SOURCE_DIR}/IOWrapper/ImageRW_dummy.cpp)
-    set(OPENCV_LIBRARY)
 endif()
 
 # decide if we have ziplib.
 if(LIBZIP_LIBRARY)
-  message("--- found ziplib (${LIBZIP_VERSION}), compiling with zip capability.")
+  message(STATUS "--- found ziplib (${LIBZIP_VERSION}), compiling with zip capability.")
   add_definitions(-DHAS_ZIPLIB=1)
   include_directories(${LIBZIP_INCLUDE_DIR_ZIP} ${LIBZIP_INCLUDE_DIR_ZIPCONF})
 else()
-  message("--- not found ziplib (${LIBZIP_LIBRARY}), compiling without zip capability.")
+  message(STATUS "--- not found ziplib (${LIBZIP_LIBRARY}), compiling without zip capability.")
   set(LIBZIP_LIBRARY "")
 endif()
 
@@ -180,21 +188,21 @@ target_include_directories(dmvio
 set_property(TARGET dmvio PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 # build main executable (only if we have both OpenCV and Pangolin)
-if(OpenCV_FOUND AND Pangolin_FOUND)
-  message("--- compiling dmvio_dataset.")
+if(OpenCV_FOUND AND Pangolin_FOUND AND BUILD_EXECUTABLES)
+  message(STATUS "--- compiling dmvio_dataset.")
   add_executable(dmvio_dataset ${PROJECT_SOURCE_DIR}/src/main_dmvio_dataset.cpp)
   set(DMVIO_LINKED_LIBRARIES boost_system cxsparse ${LIBZIP_LIBRARY} ${Pangolin_LIBRARIES} ${STACKTRACE_LIBRARIES})
   target_link_libraries(dmvio_dataset dmvio ${DMVIO_LINKED_LIBRARIES})
 
   if(realsense2_FOUND)
-    message("--- compiling dmvio_t265.")
+    message(STATUS "--- compiling dmvio_t265.")
     set(dmvio_t265_SOURCE_FILES ${PROJECT_SOURCE_DIR}/src/live/RealsenseT265.cpp)
     add_executable(dmvio_t265 ${PROJECT_SOURCE_DIR}/src/main_dmvio_t265.cpp ${dmvio_t265_SOURCE_FILES})
     target_link_libraries(dmvio_t265 dmvio ${DMVIO_LINKED_LIBRARIES} realsense2::realsense2)
   endif()
 
 else()
-  message("--- not building dmvio_dataset, since either don't have openCV or Pangolin.")
+  message(STATUS "--- not building executables, since either don't have openCV or Pangolin.")
 endif()
 
 add_subdirectory(test)
