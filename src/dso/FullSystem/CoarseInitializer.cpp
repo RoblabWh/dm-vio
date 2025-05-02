@@ -311,7 +311,7 @@ namespace dso
 
     // IOWrap::displayImage("idepth-R", &iRImg, false);
     for (IOWrap::Output3DWrapper *ow : wraps)
-      ow->pushDepthImage(&iRImg);
+      ow->pushDepthImage(&iRImg, firstFrame);
   }
 
   // calculates residual, Hessian and Hessian-block neede for re-substituting depth.

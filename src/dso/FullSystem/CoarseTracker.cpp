@@ -897,7 +897,7 @@ namespace dso
       // IOWrap::displayImage("coarseDepth LVL0", &mf, false);
 
       for (IOWrap::Output3DWrapper *ow : wraps)
-        ow->pushDepthImage(&mf);
+        ow->pushDepthImage(&mf, lastRef);
 
       if (debugSaveImages)
       {

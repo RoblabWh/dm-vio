@@ -80,7 +80,7 @@ namespace dso
       void addGTCamPose(const SE3 &gtPose);
 
       virtual void pushLiveFrame(FrameHessian *image) override;
-      virtual void pushDepthImage(MinimalImageB3 *image) override;
+      virtual void pushDepthImage(MinimalImageB3 *image, FrameHessian *KF) override;
       virtual bool needPushDepthImage() override;
 
       bool shouldQuit();

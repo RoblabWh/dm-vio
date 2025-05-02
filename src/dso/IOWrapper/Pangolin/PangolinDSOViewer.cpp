@@ -575,8 +575,9 @@ namespace dso
     {
       return setting_render_displayDepth;
     }
-    void PangolinDSOViewer::pushDepthImage(MinimalImageB3 *image)
+    void PangolinDSOViewer::pushDepthImage(MinimalImageB3 *image, FrameHessian *KF)
     {
+      (void)KF;
 
       if (!setting_render_displayDepth)
         return;
