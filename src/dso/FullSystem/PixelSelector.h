@@ -211,7 +211,7 @@ namespace dso
     return numGood;
   }
 
-  inline int makePixelStatus(Eigen::Vector3f *grads, bool *map, int w, int h, float desiredDensity, int recsLeft = 5, float THFac = 1)
+  inline int makePixelStatus(Eigen::Vector3f *grads, bool *map, int w, int h, float desiredDensity, int &sparsityFactor, int recsLeft = 5, float THFac = 1)
   {
     if (sparsityFactor < 1)
       sparsityFactor = 1;
@@ -273,7 +273,7 @@ namespace dso
       //		printf(" -> re-evaluate! \n");
       // re-evaluate.
       sparsityFactor = newSparsity;
-      return makePixelStatus(grads, map, w, h, desiredDensity, recsLeft - 1, THFac);
+      return makePixelStatus(grads, map, w, h, desiredDensity, sparsityFactor, recsLeft - 1, THFac);
     }
   }
 

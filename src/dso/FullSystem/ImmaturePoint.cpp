@@ -29,8 +29,8 @@
 
 namespace dso
 {
-  ImmaturePoint::ImmaturePoint(int u_, int v_, FrameHessian *host_, float type, CalibHessian *HCalib)
-      : u(u_), v(v_), host(host_), my_type(type), idepth_min(0), idepth_max(NAN), lastTraceStatus(IPS_UNINITIALIZED)
+  ImmaturePoint::ImmaturePoint(int u_, int v_, FrameHessian *host_, float type, CalibHessian *HCalib, Settings *settings)
+      : u(u_), v(v_), host(host_), my_type(type), idepth_min(0), idepth_max(NAN), lastTraceStatus(IPS_UNINITIALIZED), settings(settings)
   {
 
     gradH.setZero();
@@ -51,11 +51,11 @@ namespace dso
 
       gradH += ptc.tail<2>() * ptc.tail<2>().transpose();
 
-      weights[idx] = sqrtf(setting_outlierTHSumComponent / (setting_outlierTHSumComponent + ptc.tail<2>().squaredNorm()));
+      weights[idx] = sqrtf(settings->outlierTHSumComponent / (settings->outlierTHSumComponent + ptc.tail<2>().squaredNorm()));
     }
 
-    energyTH = patternNum * setting_outlierTH;
-    energyTH *= setting_overallEnergyTHWeight * setting_overallEnergyTHWeight;
+    energyTH = patternNum * settings->outlierTH;
+    energyTH *= settings->overallEnergyTHWeight * settings->overallEnergyTHWeight;
 
     idepth_GT = 0;
     quality = 10000;
@@ -77,7 +77,7 @@ namespace dso
       return lastTraceStatus;
 
     debugPrint = false; // rand()%100==0;
-    float maxPixSearch = (wG[0] + hG[0]) * setting_maxPixSearch;
+    float maxPixSearch = (wG[0] + hG[0]) * settings->maxPixSearch;
 
     if (debugPrint)
       printf("trace pt (%.1f %.1f) from frame %d to %d. Range %f -> %f. t %f %f %f!\n",
@@ -149,7 +149,7 @@ namespace dso
       // ============== check their distance. everything below 2px is OK (-> skip). ===================
       dist = (uMin - uMax) * (uMin - uMax) + (vMin - vMax) * (vMin - vMax);
       dist = sqrtf(dist);
-      if (dist < setting_trace_slackInterval)
+      if (dist < settings->trace_slackInterval)
       {
         if (debugPrint)
           printf("TOO CERTAIN ALREADY (dist %f)!\n", dist);
@@ -174,7 +174,7 @@ namespace dso
       float dy = vMax - vMin;
       float d = 1.0f / sqrtf(dx * dx + dy * dy);
 
-      // set to [setting_maxPixSearch].
+      // set to [settings->maxPixSearch].
       uMax = uMin + dist * dx * d;
       vMax = vMin + dist * dy * d;
 
@@ -201,14 +201,14 @@ namespace dso
     }
 
     // ============== compute error-bounds on result in pixel. if the new interval is not at least 1/2 of the old, SKIP ===================
-    float dx = setting_trace_stepsize * (uMax - uMin);
-    float dy = setting_trace_stepsize * (vMax - vMin);
+    float dx = settings->trace_stepsize * (uMax - uMin);
+    float dy = settings->trace_stepsize * (vMax - vMin);
 
     float a = (Vec2f(dx, dy).transpose() * gradH * Vec2f(dx, dy));
     float b = (Vec2f(dy, -dx).transpose() * gradH * Vec2f(dy, -dx));
     float errorInPixel = 0.2f + 0.2f * (a + b) / a;
 
-    if (errorInPixel * setting_trace_minImprovementFactor > dist && std::isfinite(idepth_max))
+    if (errorInPixel * settings->trace_minImprovementFactor > dist && std::isfinite(idepth_max))
     {
       if (debugPrint)
         printf("NO SIGNIFICANT IMPROVMENT (%f)!\n", errorInPixel);
@@ -239,7 +239,7 @@ namespace dso
       dist = maxPixSearch;
     }
 
-    int numSteps = 1.9999f + dist / setting_trace_stepsize;
+    int numSteps = 1.9999f + dist / settings->trace_stepsize;
 
     float randShift = uMin * 1000 - floorf(uMin * 1000);
     float ptx = uMin - randShift * dx;
@@ -276,7 +276,7 @@ namespace dso
           continue;
         }
         float residual = hitColor - (float)(hostToFrame_affine[0] * color[idx] + hostToFrame_affine[1]);
-        float hw = fabs(residual) < setting_huberTH ? 1 : setting_huberTH / fabs(residual);
+        float hw = fabs(residual) < settings->huberTH ? 1 : settings->huberTH / fabs(residual);
         energy += hw * residual * residual * (2 - hw);
       }
 
@@ -301,7 +301,7 @@ namespace dso
     float secondBest = 1e10;
     for (int i = 0; i < numSteps; i++)
     {
-      if ((i < bestIdx - setting_minTraceTestRadius || i > bestIdx + setting_minTraceTestRadius) && errors[i] < secondBest)
+      if ((i < bestIdx - settings->minTraceTestRadius || i > bestIdx + settings->minTraceTestRadius) && errors[i] < secondBest)
         secondBest = errors[i];
     }
     float newQuality = secondBest / bestEnergy;
@@ -310,10 +310,10 @@ namespace dso
 
     // ============== do GN optimization ===================
     float uBak = bestU, vBak = bestV, gnstepsize = 1, stepBack = 0;
-    if (setting_trace_GNIterations > 0)
+    if (settings->trace_GNIterations > 0)
       bestEnergy = 1e5;
     int gnStepsGood = 0, gnStepsBad = 0;
-    for (int it = 0; it < setting_trace_GNIterations; it++)
+    for (int it = 0; it < settings->trace_GNIterations; it++)
     {
       float H = 1, b = 0, energy = 0;
       for (int idx = 0; idx < patternNum; idx++)
@@ -338,7 +338,7 @@ namespace dso
         }
         float residual = hitColor[0] - (hostToFrame_affine[0] * color[idx] + hostToFrame_affine[1]);
         float dResdDist = dx * hitColor[1] + dy * hitColor[2];
-        float hw = fabs(residual) < setting_huberTH ? 1 : setting_huberTH / fabs(residual);
+        float hw = fabs(residual) < settings->huberTH ? 1 : settings->huberTH / fabs(residual);
 
         H += hw * dResdDist * dResdDist;
         b += hw * residual * dResdDist;
@@ -385,7 +385,7 @@ namespace dso
                  uBak, vBak, bestU, bestV);
       }
 
-      if (fabsf(stepBack) < setting_trace_GNThreshold)
+      if (fabsf(stepBack) < settings->trace_GNThreshold)
         break;
     }
 
@@ -393,7 +393,7 @@ namespace dso
     //	float absGrad0 = getInterpolatedElement(frame->absSquaredGrad[0],bestU, bestV, wG[0]);
     //	float absGrad1 = getInterpolatedElement(frame->absSquaredGrad[1],bestU*0.5-0.25, bestV*0.5-0.25, wG[1]);
     //	float absGrad2 = getInterpolatedElement(frame->absSquaredGrad[2],bestU*0.25-0.375, bestV*0.25-0.375, wG[2]);
-    if (!(bestEnergy < energyTH * setting_trace_extraSlackOnTH))
+    if (!(bestEnergy < energyTH * settings->trace_extraSlackOnTH))
     //			|| (absGrad0*areaGradientSlackFactor < host->frameGradTH
     //		     && absGrad1*areaGradientSlackFactor < host->frameGradTH*0.75f
     //			 && absGrad2*areaGradientSlackFactor < host->frameGradTH*0.50f))
@@ -486,7 +486,7 @@ namespace dso
 
       float residual = hitColor[0] - (affLL[0] * color[idx] + affLL[1]);
 
-      float hw = fabsf(residual) < setting_huberTH ? 1 : setting_huberTH / fabsf(residual);
+      float hw = fabsf(residual) < settings->huberTH ? 1 : settings->huberTH / fabsf(residual);
       energyLeft += weights[idx] * weights[idx] * hw * residual * residual * (2 - hw);
     }
 
@@ -546,7 +546,7 @@ namespace dso
       }
       float residual = hitColor[0] - (affLL[0] * color[idx] + affLL[1]);
 
-      float hw = fabsf(residual) < setting_huberTH ? 1 : setting_huberTH / fabsf(residual);
+      float hw = fabsf(residual) < settings->huberTH ? 1 : settings->huberTH / fabsf(residual);
       energyLeft += weights[idx] * weights[idx] * hw * residual * residual * (2 - hw);
 
       // depth derivatives.

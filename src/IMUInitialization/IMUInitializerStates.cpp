@@ -114,7 +114,7 @@ dmvio::RealtimeCoarseIMUInitState::addPose(const dso::FrameShell &shell, bool wi
   {
   case NOT_RUNNING:
     DefaultActiveIMUInitializerState::addPose(shell, willBecomeKeyframe, imuData);
-    if (logic.coarseIMUOptimizer->numFrames > 5 && willBecomeKeyframe && !dso::setting_fullResetRequested)
+    if (logic.coarseIMUOptimizer->numFrames > 5 && willBecomeKeyframe && !logic.dsoSettings->fullResetRequested)
     {
       optimizingTimestamp = shell.timestamp;
       // perform optimization in separate thread.

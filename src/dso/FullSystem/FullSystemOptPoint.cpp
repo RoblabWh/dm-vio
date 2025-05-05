@@ -77,7 +77,7 @@ namespace dso
       residuals[i].state_energy = residuals[i].state_NewEnergy;
     }
 
-    if (!std::isfinite(lastEnergy) || lastHdd < setting_minIdepthH_act)
+    if (!std::isfinite(lastEnergy) || lastHdd < settings->minIdepthH_act)
     {
       if (print)
         printf("OptPoint: Not well-constrained (%d res, H=%.1f). E=%f. SKIP!\n",
@@ -90,7 +90,7 @@ namespace dso
              nres, lastHdd, lastEnergy, currentIdepth);
 
     float lambda = 0.1;
-    for (int iteration = 0; iteration < setting_GNItsOnPointActivation; iteration++)
+    for (int iteration = 0; iteration < settings->GNItsOnPointActivation; iteration++)
     {
       float H = lastHdd;
       H *= 1 + lambda;
@@ -103,7 +103,7 @@ namespace dso
       for (int i = 0; i < nres; i++)
         newEnergy += point->linearizeResidual(&Hcalib, 1, residuals + i, newHdd, newbd, newIdepth);
 
-      if (!std::isfinite(lastEnergy) || newHdd < setting_minIdepthH_act)
+      if (!std::isfinite(lastEnergy) || newHdd < settings->minIdepthH_act)
       {
         if (print)
           printf("OptPoint: Not well-constrained (%d res, H=%.1f). E=%f. SKIP!\n",
@@ -162,7 +162,7 @@ namespace dso
       return (PointHessian *)((long)(-1)); // yeah I'm like 99% sure this is OK on 32bit systems.
     }
 
-    PointHessian *p = new PointHessian(point, &Hcalib);
+    PointHessian *p = new PointHessian(point, &Hcalib, settings);
     if (!std::isfinite(p->energyTH))
     {
       delete p;
@@ -180,7 +180,7 @@ namespace dso
     for (int i = 0; i < nres; i++)
       if (residuals[i].state_state == ResState::IN)
       {
-        PointFrameResidual *r = new PointFrameResidual(p, p->host, residuals[i].target);
+        PointFrameResidual *r = new PointFrameResidual(p, p->host, residuals[i].target, settings);
         r->state_NewEnergy = r->state_energy = 0;
         r->state_NewState = ResState::OUTLIER;
         r->setState(ResState::IN);

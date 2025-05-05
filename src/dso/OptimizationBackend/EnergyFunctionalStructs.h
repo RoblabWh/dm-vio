@@ -24,6 +24,7 @@
 #pragma once
 
 #include "util/NumType.h"
+#include "util/settings.h"
 #include "vector"
 #include <math.h>
 #include "OptimizationBackend/RawResidualJacobian.h"
@@ -95,7 +96,7 @@ namespace dso
   {
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    EFPoint(PointHessian *d, EFFrame *host_) : data(d), host(host_)
+    EFPoint(PointHessian *d, EFFrame *host_, Settings *settings) : data(d), host(host_), settings(settings)
     {
       takeData();
       stateFlag = EFPointStatus::PS_GOOD;
@@ -124,6 +125,9 @@ namespace dso
     float bd_accAF;
 
     EFPointStatus stateFlag;
+
+  private:
+    Settings *settings;
   };
 
   class EFFrame

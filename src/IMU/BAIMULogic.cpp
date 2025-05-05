@@ -55,18 +55,18 @@ constexpr char end = '\n';
 
 BAIMULogic::BAIMULogic(PreintegrationProviderBA *preintegrationProvider, BAGTSAMIntegration *baIntegration,
                        const IMUCalibration &imuCalibration,
-                       IMUSettings &imuSettings)
+                       IMUSettings &imuSettings, dso::Settings *dsoSettings)
     : preintegrationProvider(preintegrationProvider), baIntegration(baIntegration), imuSettings(imuSettings),
       imuCalibration(imuCalibration), scaleQueue(imuSettings.generalScaleIntervalSize),
       optimizeScalePtr(new bool()), optimizeGravityPtr(new bool()), optimizedIMUExtrinsicsPtr(new bool()),
       optimizeScale(*optimizeScalePtr), optimizeGravity(*optimizeGravityPtr),
-      optimizeIMUExtrinsics(*optimizedIMUExtrinsicsPtr)
+      optimizeIMUExtrinsics(*optimizedIMUExtrinsicsPtr), dsoSettings(dsoSettings)
 {
   if (!imuSettings.initSettings.disableVIOUntilFirstInit)
   {
-    optimizeScale = imuSettings.setting_optScaleBA;
-    optimizeGravity = imuSettings.setting_optGravity;
-    optimizeIMUExtrinsics = imuSettings.setting_optIMUExtrinsics;
+    optimizeScale = imuSettings.optScaleBA;
+    optimizeGravity = imuSettings.optGravity;
+    optimizeIMUExtrinsics = imuSettings.optIMUExtrinsics;
     optimizeTransform = optimizeScale || optimizeGravity || optimizeIMUExtrinsics;
   }
   else
@@ -125,7 +125,7 @@ void dmvio::BAIMULogic::updateBAOrdering(std::vector<dso::EFFrame *> &frames, gt
     ordering->push_back(gravityKey);
     baDimMap[gravityKey] = 3;
   }
-  if (imuSettings.setting_optIMUExtrinsics && optimizeIMUExtrinsics)
+  if (imuSettings.optIMUExtrinsics && optimizeIMUExtrinsics)
   {
     gtsam::Symbol extrinsicsKey('i', index);
     ordering->push_back(extrinsicsKey);
@@ -192,7 +192,7 @@ void dmvio::BAIMULogic::addFirstBAFrame(int keyframeId, BAGraphs *baGraphs, gtsa
   baValues->insert(vel_current_key, initialVelocity);
   baValues->insert(bias_current_key, initialBias);
 
-  if (imuSettings.setting_prior_bias)
+  if (imuSettings.prior_bias)
   {
     gtsam::noiseModel::Diagonal::shared_ptr bias_prior_model = gtsam::noiseModel::Diagonal::Variances(
         (gtsam::Vector(6) << 1e-2, 1e-2, 1e-2, 1e-3, 1e-3, 1e-3).finished());
@@ -202,7 +202,7 @@ void dmvio::BAIMULogic::addFirstBAFrame(int keyframeId, BAGraphs *baGraphs, gtsa
         BIAS_AND_PRIOR_GROUP);
   }
 
-  if (imuSettings.setting_prior_velocity)
+  if (imuSettings.prior_velocity)
   {
     gtsam::noiseModel::Diagonal::shared_ptr velocity_prior_model = gtsam::noiseModel::Isotropic::Sigma(3, 1e-1);
     baGraphs->addFactor(boost::make_shared<gtsam::PriorFactor<gtsam::Vector3>>(vel_current_key, initialVelocity,
@@ -380,7 +380,7 @@ bool dmvio::BAIMULogic::postSolve(gtsam::Values::shared_ptr values, gtsam::Value
   for (auto &&pair : accums)
   {
     double val = std::sqrt(pair.second.getMean());
-    double thresh = thresholds[pair.first] * dso::setting_thOptIterations;
+    double thresh = thresholds[pair.first] * dsoSettings->thOptIterations;
     canBreak = canBreak && val < thresh;
   }
   return canBreak && !dontBreak;
@@ -398,7 +398,7 @@ void dmvio::BAIMULogic::acceptUpdate(gtsam::Values::shared_ptr values, gtsam::Va
   if (optimizeScale && !scaleFixed)
   {
     double newScale = transformDSOToIMU->getScale();
-    if (!dso::setting_debugout_runquiet)
+    if (!dsoSettings->debugout_runquiet)
     {
       std::cout << "Optimized scale: " << newScale << end;
     }
@@ -479,23 +479,23 @@ void dmvio::BAIMULogic::finishKeyframeOperations(int keyframeId)
     }
     double diff = realMaxScale / realMinScale - 1.0;
 
-    if (diff < imuSettings.setting_scaleFixTH)
+    if (diff < imuSettings.scaleFixTH)
     {
       // Fix scale!
       scaleFixed = true;
       std::cout << "Fixing scale at time: " << std::fixed << std::setprecision(6) << currBATimestamp << std::endl;
 
       // Useful for testing. Allows to evaluate the visual-only system, for the majority of the time but with the metric scale obtained from IMU.
-      if (imuSettings.setting_visualOnlyAfterScaleFixing == 1)
+      if (imuSettings.visualOnlyAfterScaleFixing == 1)
       {
         std::cout << "DISABLING IMU AND THE GTSAM INTEGRATION COMPLETELY!" << std::endl;
-        dso::setting_useIMU = false;
-        dso::setting_useGTSAMIntegration = false;
+        dsoSettings->useIMU = false;
+        dsoSettings->useGTSAMIntegration = false;
       }
-      else if (imuSettings.setting_visualOnlyAfterScaleFixing == 2)
+      else if (imuSettings.visualOnlyAfterScaleFixing == 2)
       {
         std::cout << "DISABLING IMU COMPLETELY!" << std::endl;
-        dso::setting_useIMU = false;
+        dsoSettings->useIMU = false;
         disableFromKF = keyframeId;
       }
     }
@@ -658,7 +658,7 @@ std::unique_ptr<InformationBAToCoarse> BAIMULogic::finishKeyframeOptimization(in
   returning->transformIMUToDSOForCoarse = std::make_unique<TransformIMUToDSOForCoarse<TransformDSOToIMU>>(copy,
                                                                                                           keyframeId);
 
-  if (imuSettings.setting_transferCovToCoarse)
+  if (imuSettings.transferCovToCoarse)
   {
     returning->priorFactor = factorForCoarseGraph;
   }
@@ -778,9 +778,9 @@ void BAIMULogic::initFromIMUInit(const gtsam::Values &values, bool reinit, bool 
   {
     std::cout << "INITIALIZED IMU Integration. Using IMU data in main optimization from now on!" << std::endl;
 
-    optimizeScale = imuSettings.setting_optScaleBA;
-    optimizeGravity = imuSettings.setting_optGravity;
-    optimizeIMUExtrinsics = imuSettings.setting_optIMUExtrinsics;
+    optimizeScale = imuSettings.optScaleBA;
+    optimizeGravity = imuSettings.optGravity;
+    optimizeIMUExtrinsics = imuSettings.optIMUExtrinsics;
 
     previousKeyframeId = latestKFId;
   }

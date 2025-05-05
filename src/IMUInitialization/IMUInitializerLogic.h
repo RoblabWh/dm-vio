@@ -60,7 +60,7 @@ namespace dmvio
                         dmvio::IMUInitSettings &settings,
                         DelayedMarginalizationGraphs *delayedMarginalization,
                         bool linearizeOperation, InitCallback callOnInit,
-                        IMUInitStateChanger &stateChanger);
+                        IMUInitStateChanger &stateChanger, dso::Settings *dsoSettings);
 
     // This is required to change the state from different threads.
     IMUInitStateChanger &stateChanger;
@@ -93,6 +93,8 @@ namespace dmvio
 
     // For PGBA.
     std::unique_ptr<PoseGraphBundleAdjustment> pgba;
+
+    dso::Settings *dsoSettings;
   };
 
 }

@@ -36,7 +36,7 @@
 namespace dso
 {
 
-  PixelSelector::PixelSelector(int w, int h)
+  PixelSelector::PixelSelector(int w, int h, Settings *settings) : settings(settings)
   {
     randomPattern = new unsigned char[w * h];
     std::srand(3141592); // want to be deterministic.
@@ -120,7 +120,7 @@ namespace dso
             hist0[0]++;
           }
 
-        ths[x + y * w32] = computeHistQuantil(hist0, setting_minGradHistCut) + setting_minGradHistAdd;
+        ths[x + y * w32] = computeHistQuantil(hist0, settings->minGradHistCut) + settings->minGradHistAdd;
       }
 
     for (int y = 0; y < h32; y++)
@@ -184,7 +184,7 @@ namespace dso
     float quotia;
     int idealPotential = currentPotential;
 
-    //	if(setting_pixelSelectionUseFast>0 && allowFast)
+    //	if(settings->pixelSelectionUseFast>0 && allowFast)
     //	{
     //		memset(map_out, 0, sizeof(float)*wG[0]*hG[0]);
     //		std::vector<cv::KeyPoint> pts;
@@ -194,7 +194,7 @@ namespace dso
     //			float v = fh->dI[i][0]*0.8;
     //			img8u.at<uchar>(i) = (!std::isfinite(v) || v>255) ? 255 : v;
     //		}
-    //		cv::FAST(img8u, pts, setting_pixelSelectionUseFast, true);
+    //		cv::FAST(img8u, pts, settings->pixelSelectionUseFast, true);
     //		for(unsigned int i=0;i<pts.size();i++)
     //		{
     //			int x = pts[i].pt.x+0.5;
@@ -357,7 +357,7 @@ namespace dso
 
     memset(map_out, 0, w * h * sizeof(PixelSelectorStatus));
 
-    float dw1 = setting_gradDownweightPerLevel;
+    float dw1 = settings->gradDownweightPerLevel;
     float dw2 = dw1 * dw1;
 
     int n3 = 0, n2 = 0, n4 = 0;
@@ -410,7 +410,7 @@ namespace dso
                     {
                       Vec2f ag0d = map0[idx].tail<2>();
                       float dirNorm = fabsf((float)(ag0d.dot(dir2)));
-                      if (!setting_selectDirectionDistribution)
+                      if (!settings->selectDirectionDistribution)
                         dirNorm = ag0;
 
                       if (dirNorm > bestVal2)
@@ -429,7 +429,7 @@ namespace dso
                     {
                       Vec2f ag0d = map0[idx].tail<2>();
                       float dirNorm = fabsf((float)(ag0d.dot(dir3)));
-                      if (!setting_selectDirectionDistribution)
+                      if (!settings->selectDirectionDistribution)
                         dirNorm = ag1;
 
                       if (dirNorm > bestVal3)
@@ -447,7 +447,7 @@ namespace dso
                     {
                       Vec2f ag0d = map0[idx].tail<2>();
                       float dirNorm = fabsf((float)(ag0d.dot(dir4)));
-                      if (!setting_selectDirectionDistribution)
+                      if (!settings->selectDirectionDistribution)
                         dirNorm = ag2;
 
                       if (dirNorm > bestVal4)

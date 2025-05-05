@@ -88,7 +88,7 @@ namespace dso
 
     ~PointFrameResidual();
     PointFrameResidual();
-    PointFrameResidual(PointHessian *point_, FrameHessian *host_, FrameHessian *target_);
+    PointFrameResidual(PointHessian *point_, FrameHessian *host_, FrameHessian *target_, Settings *settings);
     double linearize(CalibHessian *HCalib);
 
     void resetOOB()
@@ -103,5 +103,8 @@ namespace dso
     void debugPlot();
 
     void printRows(std::vector<VecX> &v, VecX &r, int nFrames, int nPoints, int M, int res);
+
+  private:
+    Settings *settings;
   };
 }

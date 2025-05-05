@@ -38,9 +38,9 @@ using std::cout;
 using std::endl;
 
 IMUIntegration::IMUIntegration(dso::CalibHessian *HCalib, const IMUCalibration &imuCalibrationPassed,
-                               IMUSettings &imuSettingsPassed, bool linearizeOperationPassed)
+                               IMUSettings &imuSettingsPassed, bool linearizeOperationPassed, dso::Settings *dsoSettings)
     : linearizeOperation(linearizeOperationPassed), preparedKeyframe(-1), preparedKFCreated(false),
-      imuCalibration(imuCalibrationPassed), imuSettings(imuSettingsPassed)
+      imuCalibration(imuCalibrationPassed), imuSettings(imuSettingsPassed), dsoSettings(dsoSettings)
 {
   // Create preintegrationParams
   double accelVar = imuCalibration.accel_sigma * imuCalibration.accel_sigma;
@@ -62,12 +62,12 @@ IMUIntegration::IMUIntegration(dso::CalibHessian *HCalib, const IMUCalibration &
   // Pass empty transformation, because DSO and baGraph have the same coordinate system (except for the side of epsilon).
   std::unique_ptr<TransformIdentity> transformationDSOToBA(new TransformIdentity());
   GTSAMIntegrationSettings baGTSAMSettings;
-  baGTSAMSettings.weightDSOToGTSAM = imuSettings.setting_weightDSOToGTSAM;
+  baGTSAMSettings.weightDSOToGTSAM = imuSettings.weightDSOToGTSAM;
   baGTSAMIntegration.reset(
       new BAGTSAMIntegration(std::move(baGraphs), std::move(transformationDSOToBA), baGTSAMSettings, HCalib));
 
   // Create classes handling the IMUIntegration in BA and Coarse tracking respectively.
-  baLogic.reset(new BAIMULogic(this, baGTSAMIntegration.get(), imuCalibration, imuSettings));
+  baLogic.reset(new BAIMULogic(this, baGTSAMIntegration.get(), imuCalibration, imuSettings, dsoSettings));
   std::unique_ptr<PoseTransformation> coarsePoseTransformation = baLogic->getTransformDSOToIMU()->clone();
   coarseLogic.reset(
       new CoarseIMULogic(std::move(coarsePoseTransformation), preintegrationParams, imuCalibration, imuSettings));
@@ -94,7 +94,8 @@ IMUIntegration::IMUIntegration(dso::CalibHessian *HCalib, const IMUCalibration &
                                             baInitialized = true; // Note: not threadsafe for RT yet if we
                                                                   // initialize from CoarseIMUInit (which we do not do in the normal
                                                                   // transition mode).
-                                          }));
+                                          },
+                                          dsoSettings));
 
   // --------------------------------------------------
   TS_cam_imu = imuCalibration.T_cam_imu;
@@ -106,7 +107,7 @@ IMUIntegration::IMUIntegration(dso::CalibHessian *HCalib, const IMUCalibration &
 // return lastKeyframe to newKeyframe.
 dso::SE3 IMUIntegration::initCoarseGraph()
 {
-  if (!dso::setting_debugout_runquiet)
+  if (!dsoSettings->debugout_runquiet)
   {
     std::cout << "Prepared keyframe id: " << preparedKeyframe << std::endl;
   }
@@ -233,7 +234,7 @@ void IMUIntegration::prepareKeyframe(int frameId)
   // Make sure that the previous keyframe was finished!
   if (preparedKeyframe != -1 && !linearizeOperation)
   {
-    if (!dso::setting_debugout_runquiet)
+    if (!dsoSettings->debugout_runquiet)
     {
       std::cout << "Note: there is already a keyframe prepared! " << preparedKeyframe << std::endl;
     }

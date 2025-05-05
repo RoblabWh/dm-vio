@@ -53,7 +53,8 @@ namespace dmvio
     // by transformDSOToIMU (e.g s0, g0).
     explicit CoarseIMUInitOptimizer(std::shared_ptr<PoseTransformation> transformDSOToIMU,
                                     const IMUCalibration &imuCalibration,
-                                    const CoarseIMUInitOptimizerSettings &settingsPassed);
+                                    const CoarseIMUInitOptimizerSettings &settingsPassed,
+                                    dso::Settings *dsoSettings);
 
     // Add frame to the optimizer.
     void addPose(int frameId, const dso::SE3 &camToWorld, const gtsam::PreintegratedImuMeasurements *imuData);
@@ -104,6 +105,8 @@ namespace dmvio
 
     // used to get updated poses from DSO before optimizing.
     std::map<int, const dso::FrameShell *> activeShells;
+
+    dso::Settings *dsoSettings;
   };
 
 }

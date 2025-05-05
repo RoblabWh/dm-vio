@@ -53,10 +53,6 @@ namespace dso
   class AccumulatedSCHessian;
   class AccumulatedSCHessianSSE;
 
-  extern bool EFAdjointsValid;
-  extern bool EFIndicesValid;
-  extern bool EFDeltaValid;
-
   class EnergyFunctional
   {
   public:
@@ -69,7 +65,7 @@ namespace dso
     friend class AccumulatedSCHessian;
     friend class AccumulatedSCHessianSSE;
 
-    EnergyFunctional(dmvio::BAGTSAMIntegration &gtsamIntegration);
+    EnergyFunctional(dmvio::BAGTSAMIntegration &gtsamIntegration, Settings *settings);
     ~EnergyFunctional();
 
     EFResidual *insertResidual(PointFrameResidual *r);
@@ -118,6 +114,10 @@ namespace dso
              Eigen::aligned_allocator<std::pair<const uint64_t, Eigen::Vector2i>>>
         connectivityMap;
 
+    bool EFAdjointsValid = false;
+    bool EFIndicesValid = false;
+    bool EFDeltaValid = false;
+
   private:
     VecX getStitchedDeltaF() const;
 
@@ -154,5 +154,7 @@ namespace dso
     float currentLambda;
 
     dmvio::BAGTSAMIntegration &gtsamIntegration;
+
+    Settings *settings;
   };
 }

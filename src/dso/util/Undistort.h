@@ -36,8 +36,8 @@ namespace dso
   {
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    PhotometricUndistorter(std::string file, std::string noiseImage, std::string vignetteImage, int w, int h);
-    PhotometricUndistorter(const Eigen::VectorXd &G, const Eigen::VectorXd &vignetteMap, const Eigen::Vector2i &res);
+    PhotometricUndistorter(std::string file, std::string noiseImage, std::string vignetteImage, int w, int h, Settings *settings);
+    PhotometricUndistorter(const Eigen::VectorXd &G, const Eigen::VectorXd &vignetteMap, const Eigen::Vector2i &res, Settings *settings);
     ~PhotometricUndistorter();
 
     // removes readout noise, and converts to irradiance.
@@ -65,6 +65,8 @@ namespace dso
     float *vignetteMapInv;
     int w, h;
     bool valid;
+
+    Settings *settings;
   };
 
   class Undistort
@@ -83,9 +85,9 @@ namespace dso
 
     template <typename T>
     ImageAndExposure *undistort(const MinimalImage<T> *image_raw, float exposure = 0, double timestamp = 0, float factor = 1) const;
-    static Undistort *makeFromCalibration(std::string configFilename, std::string gammaFilename = "", std::string vignetteFilename = "");
-    static Undistort *makeFromDSOCalibration(std::string configFilename, std::string gammaFilename, std::string vignetteFilename);
-    static Undistort *makeFromBasaltCalibration(std::string configFilename);
+    static Undistort *makeFromCalibration(Settings *settings, std::string configFilename, std::string gammaFilename = "", std::string vignetteFilename = "");
+    static Undistort *makeFromDSOCalibration(Settings *settings, std::string configFilename, std::string gammaFilename, std::string vignetteFilename);
+    static Undistort *makeFromBasaltCalibration(Settings *settings, std::string configFilename);
 
     void loadPhotometricCalibration(std::string file, std::string noiseImage, std::string vignetteImage);
 
@@ -102,6 +104,8 @@ namespace dso
     float *remapX;
     float *remapY;
 
+    Settings *settings;
+
     void applyBlurNoise(float *img) const;
 
     void makeOptimalK_crop();
@@ -115,7 +119,7 @@ namespace dso
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    UndistortFOV(const char *configFileName, bool noprefix);
+    UndistortFOV(const char *configFileName, bool noprefix, Settings *settings);
     ~UndistortFOV();
     void distortCoordinates(float *in_x, float *in_y, float *out_x, float *out_y, int n) const;
   };
@@ -124,7 +128,7 @@ namespace dso
   {
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    UndistortRadTan(const char *configFileName, bool noprefix);
+    UndistortRadTan(const char *configFileName, bool noprefix, Settings *settings);
     ~UndistortRadTan();
     void distortCoordinates(float *in_x, float *in_y, float *out_x, float *out_y, int n) const;
   };
@@ -133,7 +137,7 @@ namespace dso
   {
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    UndistortEquidistant(const char *configFileName, bool noprefix);
+    UndistortEquidistant(const char *configFileName, bool noprefix, Settings *settings);
     ~UndistortEquidistant();
     void distortCoordinates(float *in_x, float *in_y, float *out_x, float *out_y, int n) const;
   };
@@ -142,7 +146,7 @@ namespace dso
   {
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    UndistortPinhole(const char *configFileName, bool noprefix);
+    UndistortPinhole(const char *configFileName, bool noprefix, Settings *settings);
     ~UndistortPinhole();
     void distortCoordinates(float *in_x, float *in_y, float *out_x, float *out_y, int n) const;
 
@@ -154,7 +158,7 @@ namespace dso
   {
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    UndistortKB(const char *configFileName, bool noprefix);
+    UndistortKB(const char *configFileName, bool noprefix, Settings *settings);
     ~UndistortKB();
     void distortCoordinates(float *in_x, float *in_y, float *out_x, float *out_y, int n) const;
   };
@@ -163,7 +167,7 @@ namespace dso
   {
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    UndistortBasalt(const char *configFileName);
+    UndistortBasalt(const char *configFileName, Settings *settings);
     ~UndistortBasalt();
     void distortCoordinates(float *in_x, float *in_y, float *out_x, float *out_y, int n) const;
 

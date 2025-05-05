@@ -56,10 +56,10 @@ namespace dso
     return alignedPtr;
   }
 
-  CoarseTracker::CoarseTracker(int ww, int hh, dmvio::IMUIntegration &imuIntegration) : lastRef_aff_g2l(0, 0), imuIntegration(imuIntegration)
+  CoarseTracker::CoarseTracker(int ww, int hh, dmvio::IMUIntegration &imuIntegration, Settings *settings) : lastRef_aff_g2l(0, 0), imuIntegration(imuIntegration), settings(settings)
   {
     // make coarse tracking templates.
-    for (int lvl = 0; lvl < pyrLevelsUsed; lvl++)
+    for (int lvl = 0; lvl < settings->pyrLevelsUsed; lvl++)
     {
       int wl = ww >> lvl;
       int hl = hh >> lvl;
@@ -107,7 +107,7 @@ namespace dso
     cx[0] = HCalib->cxl();
     cy[0] = HCalib->cyl();
 
-    for (int level = 1; level < pyrLevelsUsed; ++level)
+    for (int level = 1; level < settings->pyrLevelsUsed; ++level)
     {
       w[level] = w[0] >> level;
       h[level] = h[0] >> level;
@@ -117,7 +117,7 @@ namespace dso
       cy[level] = (cy[0] + 0.5) / ((int)1 << level) - 0.5;
     }
 
-    for (int level = 0; level < pyrLevelsUsed; ++level)
+    for (int level = 0; level < settings->pyrLevelsUsed; ++level)
     {
       K[level] << fx[level], 0.0, cx[level], 0.0, fy[level], cy[level], 0.0, 0.0, 1.0;
       Ki[level] = K[level].inverse();
@@ -153,7 +153,7 @@ namespace dso
       }
     }
 
-    for (int lvl = 1; lvl < pyrLevelsUsed; lvl++)
+    for (int lvl = 1; lvl < settings->pyrLevelsUsed; lvl++)
     {
       int lvlm1 = lvl - 1;
       int wl = w[lvl], hl = h[lvl], wlm1 = w[lvlm1];
@@ -234,7 +234,7 @@ namespace dso
     }
 
     // dilate idepth by 1 (2 on lower levels).
-    for (int lvl = 2; lvl < pyrLevelsUsed; lvl++)
+    for (int lvl = 2; lvl < settings->pyrLevelsUsed; lvl++)
     {
       int wh = w[lvl] * h[lvl] - w[lvl];
       int wl = w[lvl];
@@ -282,7 +282,7 @@ namespace dso
     }
 
     // normalize idepths and weights.
-    for (int lvl = 0; lvl < pyrLevelsUsed; lvl++)
+    for (int lvl = 0; lvl < settings->pyrLevelsUsed; lvl++)
     {
       float *weightSumsl = weightSums[lvl];
       float *idepthl = idepth[lvl];
@@ -407,7 +407,7 @@ namespace dso
     float sumSquaredShiftRT = 0;
     float sumSquaredShiftNum = 0;
 
-    float maxEnergy = 2 * setting_huberTH * cutoffTH - setting_huberTH * setting_huberTH; // energy for r=setting_coarseCutoffTH.
+    float maxEnergy = 2 * settings->huberTH * cutoffTH - settings->huberTH * settings->huberTH; // energy for r=settings->coarseCutoffTH.
 
     MinimalImageB3 *resImage = 0;
     if (debugPlot)
@@ -476,7 +476,7 @@ namespace dso
       if (!std::isfinite((float)hitColor[0]))
         continue;
       float residual = hitColor[0] - (float)(affLL[0] * refColor + affLL[1]);
-      float hw = fabs(residual) < setting_huberTH ? 1 : setting_huberTH / fabs(residual);
+      float hw = fabs(residual) < settings->huberTH ? 1 : settings->huberTH / fabs(residual);
 
       if (fabs(residual) > cutoffTH)
       {
@@ -557,10 +557,10 @@ namespace dso
       Vec5 minResForAbort,
       IOWrap::Output3DWrapper *wrap)
   {
-    debugPlot = setting_render_displayCoarseTrackingFull;
-    debugPrint = !setting_debugout_runquiet;
+    debugPlot = settings->render_displayCoarseTrackingFull;
+    debugPrint = !settings->debugout_runquiet;
 
-    assert(coarsestLvl < 5 && coarsestLvl < pyrLevelsUsed);
+    assert(coarsestLvl < 5 && coarsestLvl < settings->pyrLevelsUsed);
 
     lastResiduals.setConstant(NAN);
     lastFlowIndicators.setConstant(1000);
@@ -580,14 +580,14 @@ namespace dso
     for (int lvl = coarsestLvl; lvl >= 0; lvl--)
     {
       float levelCutoffRepeat = 1;
-      Vec6 resOld = calcRes(lvl, refToNew_current, aff_g2l_current, setting_coarseCutoffTH * levelCutoffRepeat);
+      Vec6 resOld = calcRes(lvl, refToNew_current, aff_g2l_current, settings->coarseCutoffTH * levelCutoffRepeat);
       while (resOld[5] > 0.6 && (levelCutoffRepeat < 50 || resOld[5] > 0.99))
       {
         levelCutoffRepeat *= 2;
-        resOld = calcRes(lvl, refToNew_current, aff_g2l_current, setting_coarseCutoffTH * levelCutoffRepeat);
+        resOld = calcRes(lvl, refToNew_current, aff_g2l_current, settings->coarseCutoffTH * levelCutoffRepeat);
 
-        if (!setting_debugout_runquiet)
-          printf("INCREASING cutoff to %f (ratio is %f)!\n", setting_coarseCutoffTH * levelCutoffRepeat, resOld[5]);
+        if (!settings->debugout_runquiet)
+          printf("INCREASING cutoff to %f (ratio is %f)!\n", settings->coarseCutoffTH * levelCutoffRepeat, resOld[5]);
       }
 
       calcGSSSE(lvl, H, b, refToNew_current, aff_g2l_current);
@@ -621,7 +621,7 @@ namespace dso
         SE3 refToNew_new;
         AffLight aff_g2l_new = aff_g2l_current;
         double incNorm;
-        if (dso::setting_useIMU && imuIntegration.isCoarseInitialized())
+        if (settings->useIMU && imuIntegration.isCoarseInitialized())
         {
           // The idea of the integration of the IMU (and GTSAM) into the coarse tracking is to replace the line
           // Vec8 inc = Hl.ldlt().solve(-b);
@@ -651,17 +651,17 @@ namespace dso
         {
           Vec8 inc = Hl.ldlt().solve(-b);
 
-          if (setting_affineOptModeA < 0 && setting_affineOptModeB < 0) // fix a, b
+          if (settings->affineOptModeA < 0 && settings->affineOptModeB < 0) // fix a, b
           {
             inc.head<6>() = Hl.topLeftCorner<6, 6>().ldlt().solve(-b.head<6>());
             inc.tail<2>().setZero();
           }
-          if (!(setting_affineOptModeA < 0) && setting_affineOptModeB < 0) // fix b
+          if (!(settings->affineOptModeA < 0) && settings->affineOptModeB < 0) // fix b
           {
             inc.head<7>() = Hl.topLeftCorner<7, 7>().ldlt().solve(-b.head<7>());
             inc.tail<1>().setZero();
           }
-          if (setting_affineOptModeA < 0 && !(setting_affineOptModeB < 0)) // fix a
+          if (settings->affineOptModeA < 0 && !(settings->affineOptModeB < 0)) // fix a
           {
             Mat88 HlStitch = Hl;
             Vec8 bStitch = b;
@@ -696,7 +696,7 @@ namespace dso
           incNorm = inc.norm();
         }
 
-        Vec6 resNew = calcRes(lvl, refToNew_new, aff_g2l_new, setting_coarseCutoffTH * levelCutoffRepeat);
+        Vec6 resNew = calcRes(lvl, refToNew_new, aff_g2l_new, settings->coarseCutoffTH * levelCutoffRepeat);
 
         bool accept = (resNew[0] / resNew[1]) < (resOld[0] / resOld[1]);
 
@@ -719,7 +719,7 @@ namespace dso
           resOld = resNew;
           aff_g2l_current = aff_g2l_new;
           refToNew_current = refToNew_new;
-          if (dso::setting_useIMU)
+          if (settings->useIMU)
             imuIntegration.acceptCoarseUpdate();
           lambda *= 0.5;
         }
@@ -762,22 +762,22 @@ namespace dso
 
     bool trackingGood = true;
 
-    if ((setting_affineOptModeA != 0 && (fabs(aff_g2l_out.a) > 1.2)) || (setting_affineOptModeB != 0 && (fabs(aff_g2l_out.b) > 200)))
+    if ((settings->affineOptModeA != 0 && (fabs(aff_g2l_out.a) > 1.2)) || (settings->affineOptModeB != 0 && (fabs(aff_g2l_out.b) > 200)))
       trackingGood = false;
 
     Vec2f relAff = AffLight::fromToVecExposure(lastRef->ab_exposure, newFrame->ab_exposure, lastRef_aff_g2l, aff_g2l_out).cast<float>();
 
-    if ((setting_affineOptModeA == 0 && (fabsf(logf(relAff[0])) > 1.5)) || (setting_affineOptModeB == 0 && (fabsf(relAff[1]) > 200)))
+    if ((settings->affineOptModeA == 0 && (fabsf(logf(relAff[0])) > 1.5)) || (settings->affineOptModeB == 0 && (fabsf(relAff[1]) > 200)))
       trackingGood = false;
 
-    if (setting_affineOptModeA < 0)
+    if (settings->affineOptModeA < 0)
       aff_g2l_out.a = 0;
-    if (setting_affineOptModeB < 0)
+    if (settings->affineOptModeB < 0)
       aff_g2l_out.b = 0;
 
     if (lastLvl == 0)
     {
-      if (dso::setting_useIMU)
+      if (settings->useIMU)
         imuIntegration.addVisualToCoarseGraph(H, b, trackingGood);
     }
 
@@ -787,7 +787,7 @@ namespace dso
   void CoarseTracker::debugPlotIDepthMap(float *minID_pt, float *maxID_pt, std::vector<IOWrap::Output3DWrapper *> &wraps) const
   {
     dmvio::TimeMeasurement timeMeasurement("debugPlotIDepthMap");
-    if (wraps.empty() && !debugSaveImages)
+    if (wraps.empty() && !settings->debugSaveImages)
     {
       return;
     }
@@ -899,7 +899,7 @@ namespace dso
       for (IOWrap::Output3DWrapper *ow : wraps)
         ow->pushDepthImage(&mf, lastRef);
 
-      if (debugSaveImages)
+      if (settings->debugSaveImages)
       {
         char buf[1000];
         snprintf(buf, 1000, "images_out/predicted_%05d_%05d.png", lastRef->shell->id, refFrameID);
@@ -919,14 +919,14 @@ namespace dso
       ow->pushDepthImageFloat(&mim, lastRef);
   }
 
-  CoarseDistanceMap::CoarseDistanceMap(int ww, int hh)
+  CoarseDistanceMap::CoarseDistanceMap(int ww, int hh, Settings *settings) : settings(settings)
   {
     fwdWarpedIDDistFinal = new float[ww * hh / 4];
 
     bfsList1 = new Eigen::Vector2i[ww * hh / 4];
     bfsList2 = new Eigen::Vector2i[ww * hh / 4];
 
-    int fac = 1 << (pyrLevelsUsed - 1);
+    int fac = 1 << (settings->pyrLevelsUsed - 1);
 
     coarseProjectionGrid = new PointFrameResidual *[2048 * (ww * hh / (fac * fac))];
     coarseProjectionGridNum = new int[ww * hh / (fac * fac)];
@@ -1114,7 +1114,7 @@ namespace dso
     cx[0] = HCalib->cxl();
     cy[0] = HCalib->cyl();
 
-    for (int level = 1; level < pyrLevelsUsed; ++level)
+    for (int level = 1; level < settings->pyrLevelsUsed; ++level)
     {
       w[level] = w[0] >> level;
       h[level] = h[0] >> level;
@@ -1124,7 +1124,7 @@ namespace dso
       cy[level] = (cy[0] + 0.5) / ((int)1 << level) - 0.5;
     }
 
-    for (int level = 0; level < pyrLevelsUsed; ++level)
+    for (int level = 0; level < settings->pyrLevelsUsed; ++level)
     {
       K[level] << fx[level], 0.0, cx[level], 0.0, fy[level], cy[level], 0.0, 0.0, 1.0;
       Ki[level] = K[level].inverse();

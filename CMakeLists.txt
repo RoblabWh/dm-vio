@@ -177,7 +177,7 @@ endif()
 
 # compile main library.
 include_directories(${CSPARSE_INCLUDE_DIR} ${CHOLMOD_INCLUDE_DIR})
-add_library(dmvio ${dso_SOURCE_FILES} ${dmvio_SOURCE_FILES} ${dso_opencv_SOURCE_FILES} ${dso_pangolin_SOURCE_FILES})
+add_library(dmvio STATIC ${dso_SOURCE_FILES} ${dmvio_SOURCE_FILES} ${dso_opencv_SOURCE_FILES} ${dso_pangolin_SOURCE_FILES})
 target_link_libraries(dmvio PUBLIC gtsam basalt::basalt-headers Eigen3::Eigen Sophus::Sophus yaml-cpp ${BOOST_THREAD_LIBRARY} ${OPENCV_LIBRARY})
 target_include_directories(dmvio
   PUBLIC
@@ -185,7 +185,9 @@ target_include_directories(dmvio
   ${PROJECT_SOURCE_DIR}/src/dso
   ${PROJECT_SOURCE_DIR}/thirdparty/sse2neon
 )
-set_property(TARGET dmvio PROPERTY POSITION_INDEPENDENT_CODE ON)
+set_target_properties(dmvio PROPERTIES
+    POSITION_INDEPENDENT_CODE ON
+)
 
 # build main executable (only if we have both OpenCV and Pangolin)
 if(OpenCV_FOUND AND Pangolin_FOUND AND BUILD_EXECUTABLES)

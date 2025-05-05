@@ -105,20 +105,20 @@ namespace dso
       return; // should never happen, but lets make sure.
     }
 
-    int nthIdx = setting_frameEnergyTHN * allResVec.size();
+    int nthIdx = settings->frameEnergyTHN * allResVec.size();
 
     assert(nthIdx < (int)allResVec.size());
-    assert(setting_frameEnergyTHN < 1);
+    assert(settings->frameEnergyTHN < 1);
 
     std::nth_element(allResVec.begin(), allResVec.begin() + nthIdx, allResVec.end());
     float nthElement = sqrtf(allResVec[nthIdx]);
 
-    newFrame->frameEnergyTH = nthElement * setting_frameEnergyTHFacMedian;
-    newFrame->frameEnergyTH = 26.0f * setting_frameEnergyTHConstWeight + newFrame->frameEnergyTH * (1 - setting_frameEnergyTHConstWeight);
+    newFrame->frameEnergyTH = nthElement * settings->frameEnergyTHFacMedian;
+    newFrame->frameEnergyTH = 26.0f * settings->frameEnergyTHConstWeight + newFrame->frameEnergyTH * (1 - settings->frameEnergyTHConstWeight);
     newFrame->frameEnergyTH = newFrame->frameEnergyTH * newFrame->frameEnergyTH;
-    newFrame->frameEnergyTH *= setting_overallEnergyTHWeight * setting_overallEnergyTHWeight;
+    newFrame->frameEnergyTH *= settings->overallEnergyTHWeight * settings->overallEnergyTHWeight;
 
-    if (setting_useIMU)
+    if (settings->useIMU)
     {
       // Used to enforce a maximum energy threshold.
       imuIntegration.newFrameEnergyTH(newFrame->frameEnergyTH);
@@ -141,7 +141,7 @@ namespace dso
     for (int i = 0; i < NUM_THREADS; i++)
       toRemove[i].clear();
 
-    if (multiThreading)
+    if (settings->multiThreading)
     {
       treadReduce.reduce(boost::bind(&FullSystem::linearizeAll_Reductor, this, fixLinearization, toRemove, _1, _2, _3, _4), 0, activeResiduals.size(), 0);
       lastEnergyP = treadReduce.stats[0];
@@ -210,7 +210,7 @@ namespace dso
 
     float sumNID = 0;
 
-    if (setting_solverMode & SOLVER_MOMENTUM)
+    if (settings->solverMode & SOLVER_MOMENTUM)
     {
       Hcalib.setValue(Hcalib.value_backup + Hcalib.step);
       for (FrameHessian *fh : frameHessians)
@@ -266,20 +266,20 @@ namespace dso
     sumID /= numID;
     sumNID /= numID;
 
-    if (!setting_debugout_runquiet)
+    if (!settings->debugout_runquiet)
       printf("STEPS: A %.1f; B %.1f; R %.1f; T %.1f. \t",
-             sqrtf(sumA) / (0.0005 * setting_thOptIterations),
-             sqrtf(sumB) / (0.00005 * setting_thOptIterations),
-             sqrtf(sumR) / (0.00005 * setting_thOptIterations),
-             sqrtf(sumT) * sumNID / (0.00005 * setting_thOptIterations));
+             sqrtf(sumA) / (0.0005 * settings->thOptIterations),
+             sqrtf(sumB) / (0.00005 * settings->thOptIterations),
+             sqrtf(sumR) / (0.00005 * settings->thOptIterations),
+             sqrtf(sumT) * sumNID / (0.00005 * settings->thOptIterations));
 
-    EFDeltaValid = false;
+    ef->EFDeltaValid = false;
     setPrecalcValues();
 
-    return sqrtf(sumA) < 0.0005 * setting_thOptIterations &&
-           sqrtf(sumB) < 0.00005 * setting_thOptIterations &&
-           sqrtf(sumR) < 0.00005 * setting_thOptIterations &&
-           sqrtf(sumT) * sumNID < 0.00005 * setting_thOptIterations;
+    return sqrtf(sumA) < 0.0005 * settings->thOptIterations &&
+           sqrtf(sumB) < 0.00005 * settings->thOptIterations &&
+           sqrtf(sumR) < 0.00005 * settings->thOptIterations &&
+           sqrtf(sumT) * sumNID < 0.00005 * settings->thOptIterations;
     //
     //	printf("mean steps: %f %f %f!\n",
     //			meanStepC, meanStepP, meanStepD);
@@ -288,7 +288,7 @@ namespace dso
   // sets linearization point.
   void FullSystem::backupState(bool backupLastStep)
   {
-    if (setting_solverMode & SOLVER_MOMENTUM)
+    if (settings->solverMode & SOLVER_MOMENTUM)
     {
       if (backupLastStep)
       {
@@ -348,13 +348,13 @@ namespace dso
       }
     }
 
-    EFDeltaValid = false;
+    ef->EFDeltaValid = false;
     setPrecalcValues();
   }
 
   double FullSystem::calcMEnergy(bool useNewValues)
   {
-    if (setting_forceAceptStep)
+    if (settings->forceAceptStep)
       return 0;
     // calculate (x-x0)^T * [2b + H * (x-x0)] for everything saved in L.
     // ef->makeIDX();
@@ -405,19 +405,19 @@ namespace dso
         numPoints++;
       }
 
-    if (!setting_debugout_runquiet)
+    if (!settings->debugout_runquiet)
       printf("OPTIMIZE %d pts, %d active res, %d lin res!\n", ef->nPoints, (int)activeResiduals.size(), numLRes);
 
     Vec3 lastEnergy = linearizeAll(false);
     double lastEnergyL = calcLEnergy();
     double lastEnergyM = calcMEnergy(false);
 
-    if (multiThreading)
+    if (settings->multiThreading)
       treadReduce.reduce(boost::bind(&FullSystem::applyRes_Reductor, this, true, _1, _2, _3, _4), 0, activeResiduals.size(), 50);
     else
       applyRes_Reductor(true, 0, activeResiduals.size(), 0, 0);
 
-    if (!setting_debugout_runquiet)
+    if (!settings->debugout_runquiet)
     {
       printf("Initial Error       \t");
       printOptRes(lastEnergy, lastEnergyL, lastEnergyM, 0, 0, frameHessians.back()->aff_g2l().a, frameHessians.back()->aff_g2l().b);
@@ -446,7 +446,7 @@ namespace dso
         // Update dynamic weight before solving (where the active DSO factor will be scaled accordingly).
         dynamicGTSAMWeight = baIntegration->updateDynamicWeight(lastEnergy[0], sqrtf((float)(lastEnergy[0] / (patternNum * ef->resInA))),
                                                                 frameHessians.back()->shell->trackingWasGood);
-        if (!setting_debugout_runquiet)
+        if (!settings->debugout_runquiet)
         {
           std::cout << "Dynamic weight: " << dynamicGTSAMWeight << std::endl;
         }
@@ -456,7 +456,7 @@ namespace dso
       double incDirChange = (1e-20 + previousX.dot(ef->lastX)) / (1e-20 + previousX.norm() * ef->lastX.norm());
       previousX = ef->lastX;
 
-      if (std::isfinite(incDirChange) && (setting_solverMode & SOLVER_STEPMOMENTUM))
+      if (std::isfinite(incDirChange) && (settings->solverMode & SOLVER_STEPMOMENTUM))
       {
         float newStepsize = exp(incDirChange * 1.4);
         if (incDirChange < 0 && stepsize > 1)
@@ -484,7 +484,7 @@ namespace dso
         dynamicGTSAMWeight = baIntegration->updateDynamicWeight(lastEnergy[0], sqrtf((float)(lastEnergy[0] / (patternNum * ef->resInA))), frameHessians.back()->shell->trackingWasGood);
       }
 
-      if (!setting_debugout_runquiet)
+      if (!settings->debugout_runquiet)
       {
         printf("%s %d (L %.2f, dir %.2f, ss %.1f): \t",
                (newEnergy[0] + newEnergy[1] + newEnergyL + newEnergyM / dynamicGTSAMWeight <
@@ -498,11 +498,11 @@ namespace dso
         printOptRes(newEnergy, newEnergyL, newEnergyM, 0, 0, frameHessians.back()->aff_g2l().a, frameHessians.back()->aff_g2l().b);
       }
 
-      if (setting_forceAceptStep || (newEnergy[0] + newEnergy[1] + newEnergyL + newEnergyM / dynamicGTSAMWeight <
+      if (settings->forceAceptStep || (newEnergy[0] + newEnergy[1] + newEnergyL + newEnergyM / dynamicGTSAMWeight <
                                      lastEnergy[0] + lastEnergy[1] + lastEnergyL + lastEnergyM / dynamicGTSAMWeight))
       {
 
-        if (multiThreading)
+        if (settings->multiThreading)
           treadReduce.reduce(boost::bind(&FullSystem::applyRes_Reductor, this, true, _1, _2, _3, _4), 0, activeResiduals.size(), 50);
         else
           applyRes_Reductor(true, 0, activeResiduals.size(), 0, 0);
@@ -514,7 +514,7 @@ namespace dso
         lambda *= 0.25;
         lambda = std::max(lambda, minLambda);
 
-        if (setting_useGTSAMIntegration)
+        if (settings->useGTSAMIntegration)
         {
           baIntegration->acceptBAUpdate(lastEnergy[0]);
         }
@@ -529,11 +529,11 @@ namespace dso
       }
       numIterations++;
 
-      if (canbreak && iteration >= setting_minOptIterations)
+      if (canbreak && iteration >= settings->minOptIterations)
         break;
     }
 
-    if (!setting_debugout_runquiet)
+    if (!settings->debugout_runquiet)
     {
       std::cout << "Num BA Iterations done: " << numIterations << "\n";
     }
@@ -546,8 +546,8 @@ namespace dso
 
     frameHessians.back()->setEvalPT(frameHessians.back()->PRE_worldToCam,
                                     newStateZero);
-    EFDeltaValid = false;
-    EFAdjointsValid = false;
+    ef->EFDeltaValid = false;
+    ef->EFAdjointsValid = false;
     ef->setAdjointsF(&Hcalib);
     setPrecalcValues();
 
@@ -596,7 +596,7 @@ namespace dso
 
   double FullSystem::calcLEnergy()
   {
-    if (setting_forceAceptStep)
+    if (settings->forceAceptStep)
       return 0;
 
     double Ef = ef->calcLEnergyF_MT();

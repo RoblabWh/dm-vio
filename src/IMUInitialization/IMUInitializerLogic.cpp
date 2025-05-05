@@ -32,12 +32,12 @@ dmvio::IMUInitializerLogic::IMUInitializerLogic(std::string resultsPrefix,
                                                 dmvio::IMUInitSettings &settings,
                                                 DelayedMarginalizationGraphs *delayedMarginalization,
                                                 bool linearizeOperation, InitCallback callOnInit,
-                                                IMUInitStateChanger &stateChanger)
+                                                IMUInitStateChanger &stateChanger, dso::Settings *dsoSettings)
     : imuCalibration(imuCalibration), settings(settings),
       imuMeasurements(preintegrationParams),
       optScale(new bool(true)), optGravity(new bool(true)), optT_cam_imu(new bool(false)),
       callOnInit(callOnInit), delayedMarginalizationGraphs(delayedMarginalization),
-      stateChanger(stateChanger)
+      stateChanger(stateChanger), dsoSettings(dsoSettings)
 {
   if (linearizeOperation)
   {
@@ -58,7 +58,7 @@ dmvio::IMUInitializerLogic::IMUInitializerLogic(std::string resultsPrefix,
 
   // Initialize CoarseIMUInitOptimizer:
   coarseIMUOptimizer = std::make_unique<CoarseIMUInitOptimizer>(transformDSOToIMU, imuCalibration,
-                                                                settings.coarseInitSettings);
+                                                                settings.coarseInitSettings, dsoSettings);
 
   // Add priors for transform related variables to the imuOptimGraph:
   auto factors = getPriorsAndAddValuesForTransform(*transformDSOToIMU, settings.transformPriors,

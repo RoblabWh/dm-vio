@@ -26,6 +26,7 @@
 #define DMVIO_MAINSETTINGS_H
 
 #include <util/SettingsUtil.h>
+#include <util/settings.h>
 
 namespace dmvio
 {
@@ -34,6 +35,10 @@ namespace dmvio
   class MainSettings
   {
   public:
+    // MainSettings(dso::Settings *settings = std::make_shared<dso::Settings>()) : settings(settings) {}
+    MainSettings(dso::Settings *settings) : settings(settings) {}
+    dso::Settings *settings;
+
     // Parse all commandline arguments. Unknown arguments will be forwarded to settingsUtil.
     void parseArguments(int argc, char **argv, SettingsUtil &settingsUtil);
 

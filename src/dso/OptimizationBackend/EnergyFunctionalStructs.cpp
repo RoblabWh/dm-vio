@@ -69,8 +69,8 @@ namespace dso
 
   void EFPoint::takeData()
   {
-    priorF = data->hasDepthPrior ? setting_idepthFixPrior * SCALE_IDEPTH * SCALE_IDEPTH : 0;
-    if (setting_solverMode & SOLVER_REMOVE_POSEPRIOR)
+    priorF = data->hasDepthPrior ? settings->idepthFixPrior * SCALE_IDEPTH * SCALE_IDEPTH : 0;
+    if (settings->solverMode & SOLVER_REMOVE_POSEPRIOR)
       priorF = 0;
 
     deltaF = data->idepth - data->idepth_zero;

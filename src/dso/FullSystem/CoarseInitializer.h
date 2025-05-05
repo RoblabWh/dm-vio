@@ -78,7 +78,7 @@ namespace dso
   {
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    CoarseInitializer(int ww, int hh);
+    CoarseInitializer(int ww, int hh, Settings *settings);
     ~CoarseInitializer();
 
     void setFirst(CalibHessian *HCalib, FrameHessian *newFrameHessian);
@@ -136,6 +136,8 @@ namespace dso
     float alphaW;
     float regWeight;
     float couplingWeight;
+
+    Settings *settings;
 
     Vec3f calcResAndGS(
         int lvl,

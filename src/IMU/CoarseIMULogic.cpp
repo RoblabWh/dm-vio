@@ -263,7 +263,7 @@ dmvio::CoarseIMULogic::initCoarseGraph(int keyframeId, std::unique_ptr<Informati
   // Add prior on bias and velocity.
   if (gotBABias)
   {
-    if (imuSettings.setting_transferCovToCoarse)
+    if (imuSettings.transferCovToCoarse)
     {
       coarseGraph->add(informationBAToCoarse->priorFactor);
     }
@@ -307,8 +307,8 @@ dmvio::CoarseIMULogic::computeCoarseUpdate(const dso::Mat88 &H_in, const dso::Ve
   PoseTransformation &transformIMUToCoarse = *transformIMUToDSOForCoarse;
   transformIMUToCoarse.updateWithValues(*coarseValues); // Set reference pose.
   // Convert Hessian and b to absolute poses.
-  auto dsoHAndB = convertCoarseHToGTSAM(transformIMUToCoarse, H_in * imuSettings.setting_weightDSOCoarse,
-                                        b_in * imuSettings.setting_weightDSOCoarse,
+  auto dsoHAndB = convertCoarseHToGTSAM(transformIMUToCoarse, H_in * imuSettings.weightDSOCoarse,
+                                        b_in * imuSettings.weightDSOCoarse,
                                         coarseValues->at<gtsam::Pose3>(currentPoseKey));
 
   // Linearize factor graph.
@@ -402,8 +402,8 @@ void dmvio::CoarseIMULogic::addVisualToCoarseGraph(const dso::Mat88 &H, const ds
 
   PoseTransformation &transformIMUToCoarse = *transformIMUToDSOForCoarse;
   transformIMUToCoarse.updateWithValues(*coarseValues); // Set reference pose.
-  auto dsoHAndB = convertCoarseHToGTSAM(transformIMUToCoarse, H * imuSettings.setting_weightDSOCoarse,
-                                        b * imuSettings.setting_weightDSOCoarse,
+  auto dsoHAndB = convertCoarseHToGTSAM(transformIMUToCoarse, H * imuSettings.weightDSOCoarse,
+                                        b * imuSettings.weightDSOCoarse,
                                         coarseValues->at<gtsam::Pose3>(currentPoseKey));
   gtsam::Matrix HFull = std::move(dsoHAndB.first);
   gtsam::Vector bFull = std::move(dsoHAndB.second);

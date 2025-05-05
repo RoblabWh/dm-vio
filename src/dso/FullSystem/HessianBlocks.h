@@ -154,6 +154,8 @@ namespace dso
     std::vector<FrameFramePrecalc, Eigen::aligned_allocator<FrameFramePrecalc>> targetPrecalc;
     MinimalImageB3 *debugImage;
 
+    Settings *settings;
+
     inline Vec6 w2c_leftEps() const { return get_state_scaled().head<6>(); }
     inline AffLight aff_g2l() const { return AffLight(get_state_scaled()[6], get_state_scaled()[7]); }
     inline AffLight aff_g2l_0() const { return AffLight(get_state_zero()[6] * SCALE_A, get_state_zero()[7] * SCALE_B); }
@@ -214,7 +216,7 @@ namespace dso
       assert(efFrame == 0);
       release();
       instanceCounter--;
-      for (int i = 0; i < pyrLevelsUsed; i++)
+      for (int i = 0; i < settings->pyrLevelsUsed; i++)
       {
         delete[] dIp[i];
         delete[] absSquaredGrad[i];
@@ -223,7 +225,7 @@ namespace dso
       if (debugImage != 0)
         delete debugImage;
     };
-    inline FrameHessian()
+    inline FrameHessian(Settings *settings) : settings(settings)
     {
       instanceCounter++;
       flaggedForMarginalization = false;
@@ -243,34 +245,34 @@ namespace dso
       Vec10 p = Vec10::Zero();
       if (frameID == 0)
       {
-        p.head<3>() = Vec3::Constant(setting_initialTransPrior);
-        p.segment<3>(3) = Vec3::Constant(setting_initialRotPrior);
-        if (setting_solverMode & SOLVER_REMOVE_POSEPRIOR)
+        p.head<3>() = Vec3::Constant(settings->initialTransPrior);
+        p.segment<3>(3) = Vec3::Constant(settings->initialRotPrior);
+        if (settings->solverMode & SOLVER_REMOVE_POSEPRIOR)
           p.head<6>().setZero();
 
-        p[6] = setting_initialAffAPrior;
-        p[7] = setting_initialAffBPrior;
+        p[6] = settings->initialAffAPrior;
+        p[7] = settings->initialAffBPrior;
       }
       else
       {
-        if (setting_affineOptModeA < 0)
-          p[6] = setting_initialAffAPrior;
+        if (settings->affineOptModeA < 0)
+          p[6] = settings->initialAffAPrior;
         else
-          p[6] = setting_affineOptModeA;
+          p[6] = settings->affineOptModeA;
 
-        if (setting_affineOptModeB < 0)
-          p[7] = setting_initialAffBPrior;
+        if (settings->affineOptModeB < 0)
+          p[7] = settings->initialAffBPrior;
         else
-          p[7] = setting_affineOptModeB;
+          p[7] = settings->affineOptModeB;
       }
-      p[8] = setting_initialAffAPrior;
-      p[9] = setting_initialAffBPrior;
+      p[8] = settings->initialAffAPrior;
+      p[9] = settings->initialAffBPrior;
 
       if (addCamPrior)
       {
-        p.head<3>() = Vec3::Constant(setting_initialTransPrior);
-        p.segment<3>(3) = Vec3::Constant(setting_initialRotPrior);
-        if (setting_solverMode & SOLVER_REMOVE_POSEPRIOR)
+        p.head<3>() = Vec3::Constant(settings->initialTransPrior);
+        p.segment<3>(3) = Vec3::Constant(settings->initialRotPrior);
+        if (settings->solverMode & SOLVER_REMOVE_POSEPRIOR)
           p.head<6>().setZero();
       }
 
@@ -426,6 +428,8 @@ namespace dso
     };
     PtStatus status;
 
+    Settings *settings;
+
     inline void setPointStatus(PtStatus s) { status = s; }
 
     inline void setIdepth(float idepth)
@@ -449,7 +453,7 @@ namespace dso
     std::pair<PointFrameResidual *, ResState> lastResiduals[2]; // contains information about residuals to the last two (!) frames. ([0] = latest, [1] = the one before).
 
     void release();
-    PointHessian(const ImmaturePoint *const rawPoint, CalibHessian *Hcalib);
+    PointHessian(const ImmaturePoint *const rawPoint, CalibHessian *Hcalib, Settings *settings);
     inline ~PointHessian()
     {
       assert(efPoint == 0);
@@ -469,9 +473,9 @@ namespace dso
           if (r->target == k)
             visInToMarg++;
       }
-      if ((int)residuals.size() >= setting_minGoodActiveResForMarg &&
-          numGoodResiduals > setting_minGoodResForMarg + 10 &&
-          (int)residuals.size() - visInToMarg < setting_minGoodActiveResForMarg)
+      if ((int)residuals.size() >= settings->minGoodActiveResForMarg &&
+          numGoodResiduals > settings->minGoodResForMarg + 10 &&
+          (int)residuals.size() - visInToMarg < settings->minGoodActiveResForMarg)
         return true;
 
       if (lastResiduals[0].second == ResState::OOB)
@@ -485,7 +489,7 @@ namespace dso
 
     inline bool isInlierNew()
     {
-      return (int)residuals.size() >= setting_minGoodActiveResForMarg && numGoodResiduals >= setting_minGoodResForMarg;
+      return (int)residuals.size() >= settings->minGoodActiveResForMarg && numGoodResiduals >= settings->minGoodResForMarg;
     }
   };
 

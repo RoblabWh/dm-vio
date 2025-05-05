@@ -45,7 +45,7 @@ namespace dso
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    CoarseTracker(int w, int h, dmvio::IMUIntegration &imuIntegration);
+    CoarseTracker(int w, int h, dmvio::IMUIntegration &imuIntegration, Settings *settings);
     ~CoarseTracker();
 
     bool trackNewestCoarse(
@@ -121,6 +121,8 @@ namespace dso
     Accumulator9 acc;
 
     dmvio::IMUIntegration &imuIntegration;
+
+    Settings *settings;
   };
 
   class CoarseDistanceMap
@@ -128,7 +130,7 @@ namespace dso
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    CoarseDistanceMap(int w, int h);
+    CoarseDistanceMap(int w, int h, Settings *settings);
     ~CoarseDistanceMap();
 
     void makeDistanceMap(
@@ -162,6 +164,8 @@ namespace dso
     int *coarseProjectionGridNum;
     Eigen::Vector2i *bfsList1;
     Eigen::Vector2i *bfsList2;
+
+    Settings *settings;
 
     void growDistBFS(int bfsNum);
   };

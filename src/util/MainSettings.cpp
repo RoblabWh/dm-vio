@@ -53,7 +53,7 @@ void MainSettings::parseArgument(char *arg, SettingsUtil &settingsUtil)
   {
     if (option == 1)
     {
-      setting_debugout_runquiet = true;
+      settings->debugout_runquiet = true;
       printf("QUIET MODE, I'll shut up!\n");
     }
     return;
@@ -69,7 +69,7 @@ void MainSettings::parseArgument(char *arg, SettingsUtil &settingsUtil)
   {
     if (option == 1)
     {
-      setting_logStuff = false;
+      settings->logStuff = false;
       printf("DISABLE LOGGING!\n");
     }
     return;
@@ -78,7 +78,7 @@ void MainSettings::parseArgument(char *arg, SettingsUtil &settingsUtil)
   {
     if (option == 1)
     {
-      disableAllDisplay = true;
+      settings->disableAllDisplay = true;
       printf("NO GUI!\n");
     }
     return;
@@ -87,7 +87,7 @@ void MainSettings::parseArgument(char *arg, SettingsUtil &settingsUtil)
   {
     if (option == 1)
     {
-      multiThreading = false;
+      settings->multiThreading = false;
       printf("NO MultiThreading!\n");
     }
     return;
@@ -98,12 +98,12 @@ void MainSettings::parseArgument(char *arg, SettingsUtil &settingsUtil)
     if (option == 0)
     {
       printf("Disabling IMU integration!\n");
-      setting_useIMU = false;
+      settings->useIMU = false;
     }
     else if (option == 1)
     {
       printf("Enabling IMU integration!\n");
-      setting_useIMU = true;
+      settings->useIMU = true;
     }
     return;
   }
@@ -112,7 +112,7 @@ void MainSettings::parseArgument(char *arg, SettingsUtil &settingsUtil)
   {
     if (option == 1)
     {
-      debugSaveImages = true;
+      settings->debugSaveImages = true;
       if (42 == system("rm -rf images_out"))
         printf("system call returned 42 - what are the odds?. This is only here to shut up the compiler.\n");
       if (42 == system("mkdir images_out"))
@@ -137,17 +137,17 @@ void MainSettings::parseArgument(char *arg, SettingsUtil &settingsUtil)
     if (option == 1)
     {
       printf("PHOTOMETRIC MODE WITHOUT CALIBRATION!\n");
-      setting_photometricCalibration = 0;
-      setting_affineOptModeA = 0; //-1: fix. >=0: optimize (with prior, if > 0).
-      setting_affineOptModeB = 0; //-1: fix. >=0: optimize (with prior, if > 0).
+      settings->photometricCalibration = 0;
+      settings->affineOptModeA = 0; //-1: fix. >=0: optimize (with prior, if > 0).
+      settings->affineOptModeB = 0; //-1: fix. >=0: optimize (with prior, if > 0).
     }
     if (option == 2)
     {
       printf("PHOTOMETRIC MODE WITH PERFECT IMAGES!\n");
-      setting_photometricCalibration = 0;
-      setting_affineOptModeA = -1; //-1: fix. >=0: optimize (with prior, if > 0).
-      setting_affineOptModeB = -1; //-1: fix. >=0: optimize (with prior, if > 0).
-      setting_minGradHistAdd = 3;
+      settings->photometricCalibration = 0;
+      settings->affineOptModeA = -1; //-1: fix. >=0: optimize (with prior, if > 0).
+      settings->affineOptModeB = -1; //-1: fix. >=0: optimize (with prior, if > 0).
+      settings->minGradHistAdd = 3;
     }
     if (option == 3)
     {
@@ -156,8 +156,8 @@ void MainSettings::parseArgument(char *arg, SettingsUtil &settingsUtil)
       // This mode uses vignette (and response), but still fully optimizes brightness changes, hence it is
       // appropriate for sensors without exposure time but with a calibrated vignette.
       printf("PHOTOMETRIC MODE WITH CALIBRATION, BUT NO OR INACCURATE EXPOSURE!\n");
-      setting_affineOptModeA = 0; //-1: fix. >=0: optimize (with prior, if > 0).
-      setting_affineOptModeB = 0; //-1: fix. >=0: optimize (with prior, if > 0).
+      settings->affineOptModeA = 0; //-1: fix. >=0: optimize (with prior, if > 0).
+      settings->affineOptModeB = 0; //-1: fix. >=0: optimize (with prior, if > 0).
     }
     return;
   }
@@ -188,19 +188,19 @@ void MainSettings::registerArgs(SettingsUtil &set)
   set.registerArg("speed", playbackSpeed);
   set.registerArg("preload", preload);
 
-  set.registerArg("multiCameraIndex", multiCameraIndex);
+  set.registerArg("multiCameraIndex", settings->multiCameraIndex);
 
   // We don't register preset and mode as they will be handled in parseArgument.
 
   // Register global settings.
-  set.registerArg("setting_minOptIterations", setting_minOptIterations);
-  set.registerArg("setting_maxOptIterations", setting_maxOptIterations);
-  set.registerArg("setting_minIdepth", setting_minIdepth);
-  set.registerArg("setting_solverMode", setting_solverMode);
-  set.registerArg("setting_weightZeroPriorDSOInitY", setting_weightZeroPriorDSOInitY);
-  set.registerArg("setting_weightZeroPriorDSOInitX", setting_weightZeroPriorDSOInitX);
-  set.registerArg("setting_forceNoKFTranslationThresh", setting_forceNoKFTranslationThresh);
-  set.registerArg("setting_minFramesBetweenKeyframes", setting_minFramesBetweenKeyframes);
+  set.registerArg("minOptIterations", settings->minOptIterations);
+  set.registerArg("maxOptIterations", settings->maxOptIterations);
+  set.registerArg("minIdepth", settings->minIdepth);
+  set.registerArg("solverMode", settings->solverMode);
+  set.registerArg("weightZeroPriorDSOInitY", settings->weightZeroPriorDSOInitY);
+  set.registerArg("weightZeroPriorDSOInitX", settings->weightZeroPriorDSOInitX);
+  set.registerArg("forceNoKFTranslationThresh", settings->forceNoKFTranslationThresh);
+  set.registerArg("minFramesBetweenKeyframes", settings->minFramesBetweenKeyframes);
 }
 
 void dmvio::MainSettings::settingsDefault(int preset)
@@ -218,20 +218,20 @@ void dmvio::MainSettings::settingsDefault(int preset)
 
     playbackSpeed = (preset == 0 ? 0 : 1.0);
     preload = preset == 1;
-    setting_desiredImmatureDensity = 1500;
-    setting_desiredPointDensity = 1000;
-    setting_minFrames = 5;
-    setting_maxFrames = 7;
-    setting_maxOptIterations = 6;
-    setting_minOptIterations = 1;
+    settings->desiredImmatureDensity = 1500;
+    settings->desiredPointDensity = 1000;
+    settings->minFrames = 5;
+    settings->maxFrames = 7;
+    settings->maxOptIterations = 6;
+    settings->minOptIterations = 1;
 
-    setting_logStuff = false;
+    settings->logStuff = false;
   }
 
   if (preset == 2 || preset == 3)
   {
-    // Note: These presets were not tested with DM-VIO yet, you will probably need to adjust benchmarkSetting_width
-    // and benchmarkSetting_height at least.
+    // Note: These presets were not tested with DM-VIO yet, you will probably need to adjust benchmark_width
+    // and benchmark_height at least.
     printf("FAST settings:\n"
            "- %s real-time enforcing\n"
            "- 800 active points\n"
@@ -242,17 +242,17 @@ void dmvio::MainSettings::settingsDefault(int preset)
 
     playbackSpeed = (preset == 2 ? 0 : 5);
     preload = preset == 3;
-    setting_desiredImmatureDensity = 600;
-    setting_desiredPointDensity = 800;
-    setting_minFrames = 4;
-    setting_maxFrames = 6;
-    setting_maxOptIterations = 4;
-    setting_minOptIterations = 1;
+    settings->desiredImmatureDensity = 600;
+    settings->desiredPointDensity = 800;
+    settings->minFrames = 4;
+    settings->maxFrames = 6;
+    settings->maxOptIterations = 4;
+    settings->minOptIterations = 1;
 
-    benchmarkSetting_width = 424;
-    benchmarkSetting_height = 320;
+    settings->benchmark_width = 424;
+    settings->benchmark_height = 320;
 
-    setting_logStuff = false;
+    settings->logStuff = false;
   }
 
   printf("==============================================\n");

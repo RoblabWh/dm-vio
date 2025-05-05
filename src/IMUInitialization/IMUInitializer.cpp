@@ -35,11 +35,11 @@ dmvio::IMUInitializer::IMUInitializer(std::string resultsPrefix,
                                       boost::shared_ptr<gtsam::PreintegrationParams> preintegrationParams,
                                       const IMUCalibration &imuCalibration, IMUInitSettings &settings,
                                       DelayedMarginalizationGraphs *delayedMarginalization, bool linearizeOperation,
-                                      InitCallback callOnInit)
+                                      InitCallback callOnInit, dso::Settings *dsoSettings)
 {
   logic = std::make_unique<IMUInitializerLogic>(resultsPrefix, preintegrationParams,
                                                 imuCalibration, settings, delayedMarginalization, linearizeOperation,
-                                                callOnInit, *this);
+                                                callOnInit, *this, dsoSettings);
 
   transitionModel = createTransitionModel(InitTransitionMode(settings.transitionModel), *logic);
   setState(transitionModel->getInitialState());

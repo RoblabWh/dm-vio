@@ -41,8 +41,9 @@ namespace dso
       std::string file,
       std::string noiseImage,
       std::string vignetteImage,
-      int w_, int h_)
+      int w_, int h_, Settings *settings_)
   {
+    settings = settings_;
     valid = false;
     vignetteMap = 0;
     vignetteMapInv = 0;
@@ -95,7 +96,7 @@ namespace dso
         G[i] = 255.0 * (G[i] - min) / (max - min); // make it to 0..255 => 0..255.
     }
 
-    if (setting_photometricCalibration == 0)
+    if (settings->photometricCalibration == 0)
     {
       for (int i = 0; i < GDepth; i++)
         G[i] = 255.0f * i / (float)(GDepth - 1);
@@ -171,8 +172,9 @@ namespace dso
     valid = true;
   }
 
-  PhotometricUndistorter::PhotometricUndistorter(const Eigen::VectorXd &G_, const Eigen::VectorXd &vignetteMap_, const Eigen::Vector2i &res_)
+  PhotometricUndistorter::PhotometricUndistorter(const Eigen::VectorXd &G_, const Eigen::VectorXd &vignetteMap_, const Eigen::Vector2i &res_, Settings *settings_)
   {
+    settings = settings_;
     valid = false;
     w = res_[0];
     h = res_[1];
@@ -202,7 +204,7 @@ namespace dso
     for (int i = 0; i < GDepth; i++)
       G[i] = 255.0f * (G[i] - min) / (max - min); // make it to 0..255 => 0..255.
 
-    if (setting_photometricCalibration == 0)
+    if (settings->photometricCalibration == 0)
     {
       for (int i = 0; i < GDepth; i++)
         G[i] = 255.0f * i / (float)(GDepth - 1);
@@ -258,7 +260,7 @@ namespace dso
     assert(output->w == w && output->h == h);
     assert(data != 0);
 
-    if (!valid || exposure_time <= 0 || setting_photometricCalibration == 0) // disable full photometric calibration.
+    if (!valid || exposure_time <= 0 || settings->photometricCalibration == 0) // disable full photometric calibration.
     {
       for (int i = 0; i < wh; i++)
       {
@@ -274,7 +276,7 @@ namespace dso
         data[i] = G[image_in[i]];
       }
 
-      if (setting_photometricCalibration == 2)
+      if (settings->photometricCalibration == 2)
       {
         for (int i = 0; i < wh; i++)
           data[i] *= vignetteMapInv[i];
@@ -284,7 +286,7 @@ namespace dso
       output->timestamp = 0;
     }
 
-    if (!setting_useExposure)
+    if (!settings->useExposure)
       output->exposure_time = 1;
   }
   template void PhotometricUndistorter::processFrame<unsigned char>(unsigned char *image_in, float exposure_time, float factor);
@@ -298,15 +300,15 @@ namespace dso
       delete[] remapY;
   }
 
-  Undistort *Undistort::makeFromCalibration(std::string configFilename, std::string gammaFilename, std::string vignetteFilename)
+  Undistort *Undistort::makeFromCalibration(Settings *settings, std::string configFilename, std::string gammaFilename, std::string vignetteFilename)
   {
     if (configFilename.substr(configFilename.rfind('.')) == ".json")
-      return makeFromBasaltCalibration(configFilename);
+      return makeFromBasaltCalibration(settings, configFilename);
     else
-      return makeFromDSOCalibration(configFilename, gammaFilename, vignetteFilename);
+      return makeFromDSOCalibration(settings, configFilename, gammaFilename, vignetteFilename);
   }
 
-  Undistort *Undistort::makeFromDSOCalibration(std::string configFilename, std::string gammaFilename, std::string vignetteFilename)
+  Undistort *Undistort::makeFromDSOCalibration(Settings *settings, std::string configFilename, std::string gammaFilename, std::string vignetteFilename)
   {
     printf("Reading Calibration from file %s", configFilename.c_str());
 
@@ -334,7 +336,7 @@ namespace dso
                     &ic[4], &ic[5], &ic[6], &ic[7]) == 8)
     {
       printf("found RadTan (OpenCV) camera model, building rectifier.\n");
-      u = new UndistortRadTan(configFilename.c_str(), true);
+      u = new UndistortRadTan(configFilename.c_str(), true, settings);
       if (!u->isValid())
       {
         delete u;
@@ -349,7 +351,7 @@ namespace dso
       if (ic[4] == 0)
       {
         printf("found PINHOLE camera model, building rectifier.\n");
-        u = new UndistortPinhole(configFilename.c_str(), true);
+        u = new UndistortPinhole(configFilename.c_str(), true, settings);
         if (!u->isValid())
         {
           delete u;
@@ -359,7 +361,7 @@ namespace dso
       else
       {
         printf("found ATAN camera model, building rectifier.\n");
-        u = new UndistortFOV(configFilename.c_str(), true);
+        u = new UndistortFOV(configFilename.c_str(), true, settings);
         if (!u->isValid())
         {
           delete u;
@@ -373,7 +375,7 @@ namespace dso
                          &ic[0], &ic[1], &ic[2], &ic[3],
                          &ic[4], &ic[5], &ic[6], &ic[7]) == 8)
     {
-      u = new UndistortKB(configFilename.c_str(), false);
+      u = new UndistortKB(configFilename.c_str(), false, settings);
       if (!u->isValid())
       {
         delete u;
@@ -385,7 +387,7 @@ namespace dso
                          &ic[0], &ic[1], &ic[2], &ic[3],
                          &ic[4], &ic[5], &ic[6], &ic[7]) == 8)
     {
-      u = new UndistortRadTan(configFilename.c_str(), false);
+      u = new UndistortRadTan(configFilename.c_str(), false, settings);
       if (!u->isValid())
       {
         delete u;
@@ -397,7 +399,7 @@ namespace dso
                          &ic[0], &ic[1], &ic[2], &ic[3],
                          &ic[4], &ic[5], &ic[6], &ic[7]) == 8)
     {
-      u = new UndistortEquidistant(configFilename.c_str(), false);
+      u = new UndistortEquidistant(configFilename.c_str(), false, settings);
       if (!u->isValid())
       {
         delete u;
@@ -409,7 +411,7 @@ namespace dso
                          &ic[0], &ic[1], &ic[2], &ic[3],
                          &ic[4]) == 5)
     {
-      u = new UndistortFOV(configFilename.c_str(), false);
+      u = new UndistortFOV(configFilename.c_str(), false, settings);
       if (!u->isValid())
       {
         delete u;
@@ -421,7 +423,7 @@ namespace dso
                          &ic[0], &ic[1], &ic[2], &ic[3],
                          &ic[4]) == 5)
     {
-      u = new UndistortPinhole(configFilename.c_str(), false);
+      u = new UndistortPinhole(configFilename.c_str(), false, settings);
       if (!u->isValid())
       {
         delete u;
@@ -443,15 +445,15 @@ namespace dso
     return u;
   }
 
-  Undistort *Undistort::makeFromBasaltCalibration(std::string configFilename)
+  Undistort *Undistort::makeFromBasaltCalibration(Settings *settings, std::string configFilename)
   {
     printf("Reading Calibration from file %s", configFilename.c_str());
-    return new UndistortBasalt(configFilename.c_str());
+    return new UndistortBasalt(configFilename.c_str(), settings);
   }
 
   void Undistort::loadPhotometricCalibration(std::string file, std::string noiseImage, std::string vignetteImage)
   {
-    photometricUndist = new PhotometricUndistorter(file, noiseImage, vignetteImage, getOriginalSize()[0], getOriginalSize()[1]);
+    photometricUndist = new PhotometricUndistorter(file, noiseImage, vignetteImage, getOriginalSize()[0], getOriginalSize()[1], settings);
   }
 
   template <typename T>
@@ -474,9 +476,9 @@ namespace dso
 
       float *noiseMapX = 0;
       float *noiseMapY = 0;
-      if (benchmark_varNoise > 0)
+      if (settings->benchmark_varNoise > 0)
       {
-        int numnoise = (benchmark_noiseGridsize + 8) * (benchmark_noiseGridsize + 8);
+        int numnoise = (settings->benchmark_noiseGridsize + 8) * (settings->benchmark_noiseGridsize + 8);
         noiseMapX = new float[numnoise];
         noiseMapY = new float[numnoise];
         memset(noiseMapX, 0, sizeof(float) * numnoise);
@@ -484,8 +486,8 @@ namespace dso
 
         for (int i = 0; i < numnoise; i++)
         {
-          noiseMapX[i] = 2 * benchmark_varNoise * (rand() / (float)RAND_MAX - 0.5f);
-          noiseMapY[i] = 2 * benchmark_varNoise * (rand() / (float)RAND_MAX - 0.5f);
+          noiseMapX[i] = 2 * settings->benchmark_varNoise * (rand() / (float)RAND_MAX - 0.5f);
+          noiseMapY[i] = 2 * settings->benchmark_varNoise * (rand() / (float)RAND_MAX - 0.5f);
         }
       }
 
@@ -495,10 +497,10 @@ namespace dso
         float xx = remapX[idx];
         float yy = remapY[idx];
 
-        if (benchmark_varNoise > 0)
+        if (settings->benchmark_varNoise > 0)
         {
-          float deltax = getInterpolatedElement11BiCub(noiseMapX, 4 + (xx / (float)wOrg) * benchmark_noiseGridsize, 4 + (yy / (float)hOrg) * benchmark_noiseGridsize, benchmark_noiseGridsize + 8);
-          float deltay = getInterpolatedElement11BiCub(noiseMapY, 4 + (xx / (float)wOrg) * benchmark_noiseGridsize, 4 + (yy / (float)hOrg) * benchmark_noiseGridsize, benchmark_noiseGridsize + 8);
+          float deltax = getInterpolatedElement11BiCub(noiseMapX, 4 + (xx / (float)wOrg) * settings->benchmark_noiseGridsize, 4 + (yy / (float)hOrg) * settings->benchmark_noiseGridsize, settings->benchmark_noiseGridsize + 8);
+          float deltay = getInterpolatedElement11BiCub(noiseMapY, 4 + (xx / (float)wOrg) * settings->benchmark_noiseGridsize, 4 + (yy / (float)hOrg) * settings->benchmark_noiseGridsize, settings->benchmark_noiseGridsize + 8);
           float x = idx % w + deltax;
           float y = idx / w + deltay;
           if (x < 0.01)
@@ -533,7 +535,7 @@ namespace dso
         }
       }
 
-      if (benchmark_varNoise > 0)
+      if (settings->benchmark_varNoise > 0)
       {
         delete[] noiseMapX;
         delete[] noiseMapY;
@@ -553,20 +555,20 @@ namespace dso
 
   void Undistort::applyBlurNoise(float *img) const
   {
-    if (benchmark_varBlurNoise == 0)
+    if (settings->benchmark_varBlurNoise == 0)
       return;
 
-    int numnoise = (benchmark_noiseGridsize + 8) * (benchmark_noiseGridsize + 8);
+    int numnoise = (settings->benchmark_noiseGridsize + 8) * (settings->benchmark_noiseGridsize + 8);
     float *noiseMapX = new float[numnoise];
     float *noiseMapY = new float[numnoise];
     float *blutTmp = new float[w * h];
 
-    if (benchmark_varBlurNoise > 0)
+    if (settings->benchmark_varBlurNoise > 0)
     {
       for (int i = 0; i < numnoise; i++)
       {
-        noiseMapX[i] = benchmark_varBlurNoise * (rand() / (float)RAND_MAX);
-        noiseMapY[i] = benchmark_varBlurNoise * (rand() / (float)RAND_MAX);
+        noiseMapX[i] = settings->benchmark_varBlurNoise * (rand() / (float)RAND_MAX);
+        noiseMapY[i] = settings->benchmark_varBlurNoise * (rand() / (float)RAND_MAX);
       }
     }
 
@@ -579,9 +581,9 @@ namespace dso
       for (int x = 0; x < w; x++)
       {
         float xBlur = getInterpolatedElement11BiCub(noiseMapX,
-                                                    4 + (x / (float)w) * benchmark_noiseGridsize,
-                                                    4 + (y / (float)h) * benchmark_noiseGridsize,
-                                                    benchmark_noiseGridsize + 8);
+                                                    4 + (x / (float)w) * settings->benchmark_noiseGridsize,
+                                                    4 + (y / (float)h) * settings->benchmark_noiseGridsize,
+                                                    settings->benchmark_noiseGridsize + 8);
 
         if (xBlur < 0.01)
           xBlur = 0.01;
@@ -617,9 +619,9 @@ namespace dso
       for (int y = 0; y < h; y++)
       {
         float yBlur = getInterpolatedElement11BiCub(noiseMapY,
-                                                    4 + (x / (float)w) * benchmark_noiseGridsize,
-                                                    4 + (y / (float)h) * benchmark_noiseGridsize,
-                                                    benchmark_noiseGridsize + 8);
+                                                    4 + (x / (float)w) * settings->benchmark_noiseGridsize,
+                                                    4 + (y / (float)h) * settings->benchmark_noiseGridsize,
+                                                    settings->benchmark_noiseGridsize + 8);
 
         if (yBlur < 0.01)
           yBlur = 0.01;
@@ -805,8 +807,8 @@ namespace dso
       basalt::Calibration<double> bc;
       cereal::JSONInputArchive ar(infile);
       ar(bc);
-      const auto &intr = bc.intrinsics[multiCameraIndex];
-      const auto &res = bc.resolution[multiCameraIndex];
+      const auto &intr = bc.intrinsics[settings->multiCameraIndex];
+      const auto &res = bc.resolution[settings->multiCameraIndex];
 
       parsOrg = intr.getParam();
       wOrg = res[0];
@@ -924,15 +926,15 @@ namespace dso
       // l4
       if (std::sscanf(l4.c_str(), "%d %d", &w, &h) == 2)
       {
-        if (benchmarkSetting_width != 0)
+        if (settings->benchmark_width != 0)
         {
-          w = benchmarkSetting_width;
+          w = settings->benchmark_width;
           if (outputCalibration[0] == -3)
             outputCalibration[0] = -1; // crop instead of none, since probably resolution changed.
         }
-        if (benchmarkSetting_height != 0)
+        if (settings->benchmark_height != 0)
         {
-          h = benchmarkSetting_height;
+          h = settings->benchmark_height;
           if (outputCalibration[0] == -3)
             outputCalibration[0] = -1; // crop instead of none, since probably resolution changed.
         }
@@ -983,10 +985,10 @@ namespace dso
       K(1, 2) = outputCalibration[3] * h - 0.5;
     }
 
-    if (benchmarkSetting_fxfyfac != 0)
+    if (settings->benchmark_fxfyfac != 0)
     {
-      K(0, 0) = fmax(benchmarkSetting_fxfyfac, (float)K(0, 0));
-      K(1, 1) = fmax(benchmarkSetting_fxfyfac, (float)K(1, 1));
+      K(0, 0) = fmax(settings->benchmark_fxfyfac, (float)K(0, 0));
+      K(1, 1) = fmax(settings->benchmark_fxfyfac, (float)K(1, 1));
       passthrough = false; // cannot pass through when fx / fy have been overwritten.
     }
 
@@ -1033,9 +1035,10 @@ namespace dso
     std::cout << K << "\n\n";
   }
 
-  UndistortFOV::UndistortFOV(const char *configFileName, bool noprefix)
+  UndistortFOV::UndistortFOV(const char *configFileName, bool noprefix, Settings *settings_)
   {
     printf("Creating FOV undistorter\n");
+    settings = settings_;
 
     if (noprefix)
       readFromFile(configFileName, 5);
@@ -1080,9 +1083,10 @@ namespace dso
     }
   }
 
-  UndistortRadTan::UndistortRadTan(const char *configFileName, bool noprefix)
+  UndistortRadTan::UndistortRadTan(const char *configFileName, bool noprefix, Settings *settings_)
   {
     printf("Creating RadTan undistorter\n");
+    settings = settings_;
 
     if (noprefix)
       readFromFile(configFileName, 8);
@@ -1133,9 +1137,10 @@ namespace dso
     }
   }
 
-  UndistortEquidistant::UndistortEquidistant(const char *configFileName, bool noprefix)
+  UndistortEquidistant::UndistortEquidistant(const char *configFileName, bool noprefix, Settings *settings_)
   {
     printf("Creating Equidistant undistorter\n");
+    settings = settings_;
 
     if (noprefix)
       readFromFile(configFileName, 8);
@@ -1187,9 +1192,10 @@ namespace dso
     }
   }
 
-  UndistortKB::UndistortKB(const char *configFileName, bool noprefix)
+  UndistortKB::UndistortKB(const char *configFileName, bool noprefix, Settings *settings_)
   {
     printf("Creating KannalaBrandt undistorter\n");
+    settings = settings_;
 
     if (noprefix)
       readFromFile(configFileName, 8);
@@ -1248,8 +1254,9 @@ namespace dso
     }
   }
 
-  UndistortPinhole::UndistortPinhole(const char *configFileName, bool noprefix)
+  UndistortPinhole::UndistortPinhole(const char *configFileName, bool noprefix, Settings *settings_)
   {
+    settings = settings_;
     if (noprefix)
       readFromFile(configFileName, 5);
     else
@@ -1285,8 +1292,9 @@ namespace dso
     }
   }
 
-  UndistortBasalt::UndistortBasalt(const char *configFileName)
+  UndistortBasalt::UndistortBasalt(const char *configFileName, Settings *settings_)
   {
+    settings = settings_;
     std::ifstream configFile(configFileName);
     if (!configFile.good())
     {
@@ -1303,8 +1311,8 @@ namespace dso
 
     readFromFile(configFileName, 0);
 
-    const auto vign = calib.vignette_map(multiCameraIndex);
-    photometricUndist = new PhotometricUndistorter(calib.response[multiCameraIndex], Eigen::Map<const Eigen::VectorXd>(vign.data(), vign.size()), calib.resolution[multiCameraIndex]);
+    const auto vign = calib.vignette_map(settings->multiCameraIndex);
+    photometricUndist = new PhotometricUndistorter(calib.response[settings->multiCameraIndex], Eigen::Map<const Eigen::VectorXd>(vign.data(), vign.size()), calib.resolution[settings->multiCameraIndex], settings);
   }
   UndistortBasalt::~UndistortBasalt()
   {
@@ -1327,7 +1335,7 @@ namespace dso
       Eigen::Vector3d p3d;
       p3d << ix, iy, 1;
       Eigen::Vector2d p2d;
-      calib.intrinsics[multiCameraIndex].project(p3d, p2d);
+      calib.intrinsics[settings->multiCameraIndex].project(p3d, p2d);
 
       out_x[i] = p2d.x();
       out_y[i] = p2d.y();

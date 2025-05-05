@@ -137,7 +137,7 @@ namespace dso
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     FullSystem(bool linearizeOperationPassed, const dmvio::IMUCalibration &imuCalibration,
-               dmvio::IMUSettings &imuSettings);
+               dmvio::IMUSettings &imuSettings, Settings *settings);
     virtual ~FullSystem();
 
     // adds a new frame, and creates point & residual structs.
@@ -177,6 +177,7 @@ namespace dso
     SE3 firstPose; // contains transform from first to world.
 
   private:
+    Settings *settings;
     CalibHessian Hcalib;
 
     dmvio::GravityInitializer gravityInit;

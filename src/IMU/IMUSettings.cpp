@@ -36,11 +36,11 @@ IMUCalibration::IMUCalibration()
 }
 
 // Directly pass the camchain.yaml (EuRoC format).
-IMUCalibration::IMUCalibration(std::string settingsFilename)
+IMUCalibration::IMUCalibration(std::string settingsFilename, size_t cameraIndex)
 {
   initDefault();
 
-  loadFromFile(settingsFilename);
+  loadFromFile(settingsFilename, cameraIndex);
 }
 
 void IMUCalibration::initDefault()
@@ -67,7 +67,7 @@ void IMUCalibration::registerArgs(dmvio::SettingsUtil &set)
   set.registerArg("integration_sigma", integration_sigma);
 }
 
-void IMUCalibration::loadFromFile(std::string settingsFilename)
+void IMUCalibration::loadFromFile(std::string settingsFilename, size_t cameraIndex)
 {
   if (settingsFilename == "")
   {
@@ -83,7 +83,7 @@ void IMUCalibration::loadFromFile(std::string settingsFilename)
     basalt::Calibration<double> bc;
     cereal::JSONInputArchive ar(infile);
     ar(bc);
-    T_cam_imu = bc.T_i_c[dso::multiCameraIndex].inverse();
+    T_cam_imu = bc.T_i_c[cameraIndex].inverse();
 
     // Select worst axis for each value (like done by Kalibr) and infalte them to account for unmodelled effects (like done by TUM-VI & DM-VIO)
     accel_sigma = bc.accel_noise_std.maxCoeff() * 160;
@@ -93,7 +93,7 @@ void IMUCalibration::loadFromFile(std::string settingsFilename)
   }
   else
   {
-    YAML::Node config = YAML::LoadFile(settingsFilename)["cam0"];
+    YAML::Node config = YAML::LoadFile(settingsFilename)["cam" + std::to_string(cameraIndex)];
     std::vector<std::vector<double>> theVector = config["T_cam_imu"].as<std::vector<std::vector<double>>>();
     Eigen::Matrix4d matrix;
     for (int x = 0; x < 4; ++x)
@@ -152,24 +152,24 @@ void IMUSettings::registerArgs(dmvio::SettingsUtil &set)
 
   set.registerArg("skipFirstKeyframe", skipFirstKeyframe);
 
-  set.registerArg("setting_weightDSOCoarse", setting_weightDSOCoarse);
-  set.registerArg("setting_weightDSOToGTSAM", setting_weightDSOToGTSAM);
+  set.registerArg("weightDSOCoarse", weightDSOCoarse);
+  set.registerArg("weightDSOToGTSAM", weightDSOToGTSAM);
   set.registerArg("maxFrameEnergyThreshold", maxFrameEnergyThreshold);
 
   set.registerArg("dynamicWeightRMSEThresh", dynamicWeightRMSEThresh);
   set.registerArg("updateDynamicWeightDuringOptimization", updateDynamicWeightDuringOptimization);
 
-  set.registerArg("setting_scaleFixTH", setting_scaleFixTH);
+  set.registerArg("scaleFixTH", scaleFixTH);
   set.registerArg("generalScaleIntervalSize", generalScaleIntervalSize);
 
   set.registerArg("numMeasurementsGravityInit", numMeasurementsGravityInit);
 
-  set.registerArg("setting_optScaleBA", setting_optScaleBA);
-  set.registerArg("setting_optGravity", setting_optGravity);
-  set.registerArg("setting_optIMUExtrinsics", setting_optIMUExtrinsics);
+  set.registerArg("optScaleBA", optScaleBA);
+  set.registerArg("optGravity", optGravity);
+  set.registerArg("optIMUExtrinsics", optIMUExtrinsics);
 
-  set.registerArg("setting_prior_bias", setting_prior_bias);
-  set.registerArg("setting_prior_velocity", setting_prior_velocity);
+  set.registerArg("prior_bias", prior_bias);
+  set.registerArg("prior_velocity", prior_velocity);
   transformPriors.registerArgs(set, "");
   set.registerArg("gravityDirectionFixZ", gravityDirectionFixZ);
 
@@ -186,10 +186,10 @@ void IMUSettings::registerArgs(dmvio::SettingsUtil &set)
   set.registerArg("baToCoarseAccBiasVariance", baToCoarseAccBiasVariance);
   set.registerArg("baToCoarseGyrBiasVariance", baToCoarseGyrBiasVariance);
 
-  set.registerArg("setting_transferCovToCoarse", setting_transferCovToCoarse);
+  set.registerArg("transferCovToCoarse", transferCovToCoarse);
   set.registerArg("transferCovToCoarseMultiplier", transferCovToCoarseMultiplier);
 
-  set.registerArg("setting_visualOnlyAfterScaleFixing", setting_visualOnlyAfterScaleFixing);
+  set.registerArg("visualOnlyAfterScaleFixing", visualOnlyAfterScaleFixing);
 
   initSettings.registerArgs(set);
 }

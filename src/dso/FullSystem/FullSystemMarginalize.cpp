@@ -58,11 +58,11 @@ namespace dso
   void FullSystem::flagFramesForMarginalization(FrameHessian *newFH)
   {
     dmvio::TimeMeasurement timeMeasurement("flagFramesForMarginalization");
-    if (setting_minFrameAge > setting_maxFrames)
+    if (settings->minFrameAge > settings->maxFrames)
     {
-      for (int i = setting_maxFrames; i < (int)frameHessians.size(); i++)
+      for (int i = settings->maxFrames; i < (int)frameHessians.size(); i++)
       {
-        FrameHessian *fh = frameHessians[i - setting_maxFrames];
+        FrameHessian *fh = frameHessians[i - settings->maxFrames];
         fh->flaggedForMarginalization = true;
       }
       return;
@@ -79,7 +79,7 @@ namespace dso
       Vec2 refToFh = AffLight::fromToVecExposure(frameHessians.back()->ab_exposure, fh->ab_exposure,
                                                  frameHessians.back()->aff_g2l(), fh->aff_g2l());
 
-      if ((in < setting_minPointsRemaining * (in + out) || fabs(logf((float)refToFh[0])) > setting_maxLogAffFacInWindow) && ((int)frameHessians.size()) - flagged > setting_minFrames)
+      if ((in < settings->minPointsRemaining * (in + out) || fabs(logf((float)refToFh[0])) > settings->maxLogAffFacInWindow) && ((int)frameHessians.size()) - flagged > settings->minFrames)
       {
         //			printf("MARGINALIZE frame %d, as only %'d/%'d points remaining (%'d %'d %'d %'d). VisInLast %'d / %'d. traces %d, activated %d!\n",
         //					fh->frameID, in, in+out,
@@ -102,7 +102,7 @@ namespace dso
     }
 
     // marginalize one.
-    if ((int)frameHessians.size() - flagged >= setting_maxFrames)
+    if ((int)frameHessians.size() - flagged >= settings->maxFrames)
     {
       double smallestScore = 1;
       FrameHessian *toMarginalize = 0;
@@ -110,14 +110,14 @@ namespace dso
 
       for (FrameHessian *fh : frameHessians)
       {
-        if (fh->frameID > latest->frameID - setting_minFrameAge || fh->frameID == 0)
+        if (fh->frameID > latest->frameID - settings->minFrameAge || fh->frameID == 0)
           continue;
         // if(fh==frameHessians.front() == 0) continue;
 
         double distScore = 0;
         for (FrameFramePrecalc &ffh : fh->targetPrecalc)
         {
-          if (ffh.target->frameID > latest->frameID - setting_minFrameAge + 1 || ffh.target == ffh.host)
+          if (ffh.target->frameID > latest->frameID - settings->minFrameAge + 1 || ffh.target == ffh.host)
             continue;
           distScore += 1 / (1e-5 + ffh.distanceLL);
         }

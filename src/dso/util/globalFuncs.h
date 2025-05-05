@@ -330,7 +330,7 @@ namespace dso
 
   inline Vec3f makeRainbowf3F(float id)
   {
-    id *= freeDebugParam3;
+    // id *= freeDebugParam3;
     if (id < 0)
       return Vec3f(1, 1, 1);
 
@@ -350,7 +350,7 @@ namespace dso
 
   inline Vec3b makeRainbow3B(float id)
   {
-    id *= freeDebugParam3;
+    // id *= freeDebugParam3;
     if (!(id > 0))
       return Vec3b(255, 255, 255);
 

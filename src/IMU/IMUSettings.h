@@ -54,8 +54,8 @@ namespace dmvio
     bool skipFirstKeyframe = false;
 
     // Weight wrt DSO.
-    double setting_weightDSOCoarse = 1.0 / 1000;   // DSO weight for coarse tracking.
-    double setting_weightDSOToGTSAM = 1.0 / 60000; // DSO weight for BA.
+    double weightDSOCoarse = 1.0 / 1000;   // DSO weight for coarse tracking.
+    double weightDSOToGTSAM = 1.0 / 60000; // DSO weight for BA.
     float maxFrameEnergyThreshold = 5000;          // Maximum energy threshold for DSO.
 
     // ----------- BA Settings -----------
@@ -65,20 +65,20 @@ namespace dmvio
 
     // When the scale changes less than this threshold over generalScaleIntervalSize optimizations we fix it.
     // Disabled by default but could be usefull for some applications. 0.005 or 0.007 are good values for it.
-    double setting_scaleFixTH = 0;
+    double scaleFixTH = 0;
     int generalScaleIntervalSize = 60;
 
     // Maximum number of measurements to include for the simple gravity initializer.
     int numMeasurementsGravityInit = 40;
 
     // Settings what to optimize in the main BA.
-    bool setting_optScaleBA = true;
-    bool setting_optGravity = true;
-    bool setting_optIMUExtrinsics = false;
+    bool optScaleBA = true;
+    bool optGravity = true;
+    bool optIMUExtrinsics = false;
 
     // Settings regarding priors.
-    bool setting_prior_bias = false;           // Only relevant if disableVIOUntilFirstInit=false
-    bool setting_prior_velocity = false;       // Only relevant if disableVIOUntilFirstInit=false
+    bool prior_bias = false;           // Only relevant if disableVIOUntilFirstInit=false
+    bool prior_velocity = false;       // Only relevant if disableVIOUntilFirstInit=false
     IMUTransformPriorSettings transformPriors; // Prior settings for gravity and IMU extrinsics.
     bool gravityDirectionFixZ = true;          // Fix z-axis of gravity direction (as yaw is not observable).
 
@@ -99,13 +99,13 @@ namespace dmvio
     double baToCoarseGyrBiasVariance = 5e-2;
 
     // Settings regarding bias transfer between coarse tracking and BA.
-    bool setting_transferCovToCoarse = true; // Transfer covariance from BA to tracking.
+    bool transferCovToCoarse = true; // Transfer covariance from BA to tracking.
     double transferCovToCoarseMultiplier = 1.0;
 
     // ----------- Settings for debugging. -----------
-    // Use the visual only system after scale has been fixed, which can be useful for debugging (only makes sense together with setting_scaleFixTH).
+    // Use the visual only system after scale has been fixed, which can be useful for debugging (only makes sense together with scaleFixTH).
     // 1 means that also the gtsamIntegration is not used anymore, while 2 means that the gtsamIntegration is still used with IMUExtension removed.
-    int setting_visualOnlyAfterScaleFixing = 0;
+    int visualOnlyAfterScaleFixing = 0;
   };
 
   // Contains IMU-Calibration and can read them from file.
@@ -115,9 +115,9 @@ namespace dmvio
   public:
     IMUCalibration();
 
-    IMUCalibration(std::string settingsFilename);
+    IMUCalibration(std::string settingsFilename, size_t cameraIndex);
     IMUCalibration(const dso::SE3 &tCamImu);
-    void loadFromFile(std::string settingsFilename);
+    void loadFromFile(std::string settingsFilename, size_t cameraIndex);
     void saveToFile(std::string filename); // Save T_cam_imu to as a camchain.yaml.
 
     // The noise values are registered as settings so they can be set from commandline and from the settings yaml.

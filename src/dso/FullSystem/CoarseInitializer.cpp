@@ -45,10 +45,10 @@
 namespace dso
 {
 
-  CoarseInitializer::CoarseInitializer(int ww, int hh)
-      : thisToNext_aff(0, 0), thisToNext(SE3())
+  CoarseInitializer::CoarseInitializer(int ww, int hh, Settings *settings)
+      : thisToNext_aff(0, 0), thisToNext(SE3()), settings(settings)
   {
-    for (int lvl = 0; lvl < pyrLevelsUsed; lvl++)
+    for (int lvl = 0; lvl < settings->pyrLevelsUsed; lvl++)
     {
       points[lvl] = 0;
       numPoints[lvl] = 0;
@@ -68,7 +68,7 @@ namespace dso
   }
   CoarseInitializer::~CoarseInitializer()
   {
-    for (int lvl = 0; lvl < pyrLevelsUsed; lvl++)
+    for (int lvl = 0; lvl < settings->pyrLevelsUsed; lvl++)
     {
       if (points[lvl] != 0)
         delete[] points[lvl];
@@ -95,7 +95,7 @@ namespace dso
     if (!snapped)
     {
       thisToNext.translation().setZero();
-      for (int lvl = 0; lvl < pyrLevelsUsed; lvl++)
+      for (int lvl = 0; lvl < settings->pyrLevelsUsed; lvl++)
       {
         int npts = numPoints[lvl];
         Pnt *ptsl = points[lvl];
@@ -116,10 +116,10 @@ namespace dso
       refToNew_aff_current = AffLight(logf(newFrame->ab_exposure / firstFrame->ab_exposure), 0); // coarse approximation.
 
     Vec3f latestRes = Vec3f::Zero();
-    for (int lvl = pyrLevelsUsed - 1; lvl >= 0; lvl--)
+    for (int lvl = settings->pyrLevelsUsed - 1; lvl >= 0; lvl--)
     {
 
-      if (lvl < pyrLevelsUsed - 1)
+      if (lvl < settings->pyrLevelsUsed - 1)
         propagateDown(lvl + 1);
 
       Mat88f H, Hsc;
@@ -253,7 +253,7 @@ namespace dso
     thisToNext = refToNew_current;
     thisToNext_aff = refToNew_aff_current;
 
-    for (int i = 0; i < pyrLevelsUsed - 1; i++)
+    for (int i = 0; i < settings->pyrLevelsUsed - 1; i++)
       propagateUp(i);
 
     frameID++;
@@ -410,7 +410,7 @@ namespace dso
           }
 
           float residual = hitColor[0] - r2new_aff[0] * rlR - r2new_aff[1];
-          float hw = fabs(residual) < setting_huberTH ? 1 : setting_huberTH / fabs(residual);
+          float hw = fabs(residual) < settings->huberTH ? 1 : settings->huberTH / fabs(residual);
           energy += hw * residual * residual * (2 - hw);
 
           float dxdd = (t[0] - t[2] * u) / pt[2];
@@ -577,12 +577,12 @@ namespace dso
     b_out[2] += tlog[2] * alphaOpt * npts;
 
     // Add zero prior to translation.
-    // setting_weightZeroPriorDSOInitY is the squared weight of the prior residual.
-    H_out(1, 1) += setting_weightZeroPriorDSOInitY;
-    b_out(1) += setting_weightZeroPriorDSOInitY * refToNew.translation().y();
+    // settings->weightZeroPriorDSOInitY is the squared weight of the prior residual.
+    H_out(1, 1) += settings->weightZeroPriorDSOInitY;
+    b_out(1) += settings->weightZeroPriorDSOInitY * refToNew.translation().y();
 
-    H_out(0, 0) += setting_weightZeroPriorDSOInitX;
-    b_out(0) += setting_weightZeroPriorDSOInitX * refToNew.translation().x();
+    H_out(0, 0) += settings->weightZeroPriorDSOInitX;
+    b_out(0) += settings->weightZeroPriorDSOInitX * refToNew.translation().x();
 
     double A = 0;
     int num = 0;
@@ -678,7 +678,7 @@ namespace dso
 
   void CoarseInitializer::propagateUp(int srcLvl)
   {
-    assert(srcLvl + 1 < pyrLevelsUsed);
+    assert(srcLvl + 1 < settings->pyrLevelsUsed);
     // set idepth of target
 
     int nptss = numPoints[srcLvl];
@@ -751,7 +751,7 @@ namespace dso
 
   void CoarseInitializer::makeGradients(Eigen::Vector3f **data)
   {
-    for (int lvl = 1; lvl < pyrLevelsUsed; lvl++)
+    for (int lvl = 1; lvl < settings->pyrLevelsUsed; lvl++)
     {
       int lvlm1 = lvl - 1;
       int wl = w[lvl], hl = h[lvl], wlm1 = w[lvlm1];
@@ -779,20 +779,20 @@ namespace dso
     makeK(HCalib);
     firstFrame = newFrameHessian;
 
-    PixelSelector sel(w[0], h[0]);
+    PixelSelector sel(w[0], h[0], settings);
 
     float *statusMap = new float[w[0] * h[0]];
     bool *statusMapB = new bool[w[0] * h[0]];
 
     float densities[] = {0.03, 0.05, 0.15, 0.5, 1};
-    for (int lvl = 0; lvl < pyrLevelsUsed; lvl++)
+    for (int lvl = 0; lvl < settings->pyrLevelsUsed; lvl++)
     {
       sel.currentPotential = 3;
       int npts;
       if (lvl == 0)
         npts = sel.makeMaps(firstFrame, statusMap, densities[lvl] * w[0] * h[0], 1, false, 2);
       else
-        npts = makePixelStatus(firstFrame->dIp[lvl], statusMapB, w[lvl], h[lvl], densities[lvl] * w[0] * h[0]);
+        npts = makePixelStatus(firstFrame->dIp[lvl], statusMapB, w[lvl], h[lvl], densities[lvl] * w[0] * h[0], settings->sparsityFactor);
 
       if (points[lvl] != 0)
         delete[] points[lvl];
@@ -829,11 +829,11 @@ namespace dso
               sumGrad2 += absgrad;
             }
 
-            //				float gth = setting_outlierTH * (sqrtf(sumGrad2)+setting_outlierTHSumComponent);
+            //				float gth = settings->outlierTH * (sqrtf(sumGrad2)+settings->outlierTHSumComponent);
             //				pl[nl].outlierTH = patternNum*gth*gth;
             //
 
-            pl[nl].outlierTH = patternNum * setting_outlierTH;
+            pl[nl].outlierTH = patternNum * settings->outlierTH;
 
             nl++;
             assert(nl <= npts);
@@ -851,7 +851,7 @@ namespace dso
     snapped = false;
     frameID = snappedAt = 0;
 
-    for (int i = 0; i < pyrLevelsUsed; i++)
+    for (int i = 0; i < settings->pyrLevelsUsed; i++)
       dGrads[i].setZero();
   }
 
@@ -864,7 +864,7 @@ namespace dso
       pts[i].energy.setZero();
       pts[i].idepth_new = pts[i].idepth;
 
-      if (lvl == pyrLevelsUsed - 1 && !pts[i].isGood)
+      if (lvl == settings->pyrLevelsUsed - 1 && !pts[i].isGood)
       {
         float snd = 0, sn = 0;
         for (int n = 0; n < 10; n++)
@@ -944,7 +944,7 @@ namespace dso
     cx[0] = HCalib->cxl();
     cy[0] = HCalib->cyl();
 
-    for (int level = 1; level < pyrLevelsUsed; ++level)
+    for (int level = 1; level < settings->pyrLevelsUsed; ++level)
     {
       w[level] = w[0] >> level;
       h[level] = h[0] >> level;
@@ -954,7 +954,7 @@ namespace dso
       cy[level] = (cy[0] + 0.5) / ((int)1 << level) - 0.5;
     }
 
-    for (int level = 0; level < pyrLevelsUsed; ++level)
+    for (int level = 0; level < settings->pyrLevelsUsed; ++level)
     {
       K[level] << fx[level], 0.0, cx[level], 0.0, fy[level], cy[level], 0.0, 0.0, 1.0;
       Ki[level] = K[level].inverse();
@@ -977,7 +977,7 @@ namespace dso
     // build indices
     FLANNPointcloud pcs[PYR_LEVELS];
     KDTree *indexes[PYR_LEVELS];
-    for (int i = 0; i < pyrLevelsUsed; i++)
+    for (int i = 0; i < settings->pyrLevelsUsed; i++)
     {
       pcs[i] = FLANNPointcloud(numPoints[i], points[i]);
       indexes[i] = new KDTree(2, pcs[i], nanoflann::KDTreeSingleIndexAdaptorParams(5));
@@ -987,7 +987,7 @@ namespace dso
     const int nn = 10;
 
     // find NN & parents
-    for (int lvl = 0; lvl < pyrLevelsUsed; lvl++)
+    for (int lvl = 0; lvl < settings->pyrLevelsUsed; lvl++)
     {
       Pnt *pts = points[lvl];
       int npts = numPoints[lvl];
@@ -1017,7 +1017,7 @@ namespace dso
         for (int k = 0; k < nn; k++)
           pts[i].neighboursDist[k] *= 10 / sumDF;
 
-        if (lvl < pyrLevelsUsed - 1)
+        if (lvl < settings->pyrLevelsUsed - 1)
         {
           resultSet1.init(ret_index, ret_dist);
           pt = pt * 0.5f - Vec2f(0.25f, 0.25f);
@@ -1038,7 +1038,7 @@ namespace dso
 
     // done.
 
-    for (int i = 0; i < pyrLevelsUsed; i++)
+    for (int i = 0; i < settings->pyrLevelsUsed; i++)
       delete indexes[i];
   }
 }

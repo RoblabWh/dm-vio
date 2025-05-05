@@ -78,7 +78,7 @@ namespace dmvio
 
     // Note: A reference to preintegrationProvider, imuCalibration, imuSettings, and baIntegration is kept, so they all must be kept alive.
     BAIMULogic(PreintegrationProviderBA *preintegrationProvider, BAGTSAMIntegration *baIntegration,
-               const IMUCalibration &imuCalibration, IMUSettings &imuSettings);
+               const IMUCalibration &imuCalibration, IMUSettings &imuSettings, dso::Settings *dsoSettings);
 
     // Methods called by BAGTSAMIntegration:
     virtual void addFirstBAFrame(int keyframeId, BAGraphs *baGraphs, gtsam::Values::shared_ptr baValues) override;
@@ -194,6 +194,8 @@ namespace dmvio
     // Used to get the velocity from the coarse tracking.
     gtsam::Vector3 nextVelocity;
     int nextVelocityFrameId = -1;
+
+    dso::Settings *dsoSettings;
   };
 
 }

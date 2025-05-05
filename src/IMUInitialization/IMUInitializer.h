@@ -58,7 +58,7 @@ namespace dmvio
     IMUInitializer(std::string resultsPrefix, boost::shared_ptr<gtsam::PreintegrationParams> preintegrationParams,
                    const IMUCalibration &imuCalibration, IMUInitSettings &settings,
                    DelayedMarginalizationGraphs *delayedMarginalization, bool linearizeOperation,
-                   InitCallback callOnInit);
+                   InitCallback callOnInit, dso::Settings *dsoSettings);
 
     ~IMUInitializer();
 

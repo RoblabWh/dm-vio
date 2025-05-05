@@ -82,7 +82,7 @@ inline int getdir(std::string dir, std::vector<std::string> &files)
 class ImageFolderReader : public DatasetReader
 {
 public:
-  ImageFolderReader(std::string path, std::string calibFile, std::string gammaFile, std::string vignetteFile, bool use16BitPassed, std::string tsFile = "")
+  ImageFolderReader(Settings *settings, std::string path, std::string calibFile, std::string gammaFile, std::string vignetteFile, bool use16BitPassed, std::string tsFile = "")
   {
     this->path = path;
     this->calibfile = calibFile;
@@ -128,7 +128,7 @@ public:
     else
       getdir(path, files);
 
-    undistort = Undistort::makeFromCalibration(calibFile, gammaFile, vignetteFile);
+    undistort = Undistort::makeFromCalibration(settings, calibFile, gammaFile, vignetteFile);
 
     widthOrg = undistort->getOriginalSize()[0];
     heightOrg = undistort->getOriginalSize()[1];

@@ -64,9 +64,10 @@ namespace dso
     delete J;
   }
 
-  PointFrameResidual::PointFrameResidual(PointHessian *point_, FrameHessian *host_, FrameHessian *target_) : point(point_),
-                                                                                                             host(host_),
-                                                                                                             target(target_)
+  PointFrameResidual::PointFrameResidual(PointHessian *point_, FrameHessian *host_, FrameHessian *target_, Settings *settings) : point(point_),
+                                                                                                                                 host(host_),
+                                                                                                                                 target(target_),
+                                                                                                                                 settings(settings)
   {
     efResidual = 0;
     instanceCounter++;
@@ -197,10 +198,10 @@ namespace dso
         return state_energy;
       }
 
-      float w = sqrtf(setting_outlierTHSumComponent / (setting_outlierTHSumComponent + hitColor.tail<2>().squaredNorm()));
+      float w = sqrtf(settings->outlierTHSumComponent / (settings->outlierTHSumComponent + hitColor.tail<2>().squaredNorm()));
       w = 0.5f * (w + weights[idx]);
 
-      float hw = fabsf(residual) < setting_huberTH ? 1 : setting_huberTH / fabsf(residual);
+      float hw = fabsf(residual) < settings->huberTH ? 1 : settings->huberTH / fabsf(residual);
       energyLeft += w * w * hw * residual * residual * (2 - hw);
 
       {
@@ -233,9 +234,9 @@ namespace dso
 
         wJI2_sum += hw * hw * (hitColor[1] * hitColor[1] + hitColor[2] * hitColor[2]);
 
-        if (setting_affineOptModeA < 0)
+        if (settings->affineOptModeA < 0)
           J->JabF[0][idx] = 0;
-        if (setting_affineOptModeB < 0)
+        if (settings->affineOptModeB < 0)
           J->JabF[1][idx] = 0;
       }
     }
@@ -275,7 +276,7 @@ namespace dso
       return;
     Vec3b cT = Vec3b(0, 0, 0);
 
-    if (freeDebugParam5 == 0)
+    if (settings->freeDebugParam5 == 0)
     {
       float rT = 20 * sqrt(state_energy / 9);
       if (rT < 0)

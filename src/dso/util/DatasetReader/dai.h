@@ -33,7 +33,7 @@ using namespace dso;
 class DaiFolderReader : public DatasetReader
 {
 public:
-  DaiFolderReader(std::string path, std::string calibFile, bool use16BitPassed)
+  DaiFolderReader(Settings *settings, std::string path, std::string calibFile, bool use16BitPassed)
   {
     this->path = path;
     this->calibfile = calibFile;
@@ -41,7 +41,7 @@ public:
 
     loadImages();
 
-    undistort = Undistort::makeFromCalibration(calibFile);
+    undistort = Undistort::makeFromCalibration(settings, calibFile);
 
     widthOrg = undistort->getOriginalSize()[0];
     heightOrg = undistort->getOriginalSize()[1];

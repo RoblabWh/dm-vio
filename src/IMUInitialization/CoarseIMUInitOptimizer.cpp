@@ -36,8 +36,9 @@ using symbol_shorthand::P, symbol_shorthand::S, symbol_shorthand::V, symbol_shor
 
 dmvio::CoarseIMUInitOptimizer::CoarseIMUInitOptimizer(std::shared_ptr<PoseTransformation> transformDSOToIMU,
                                                       const IMUCalibration &imuCalibration,
-                                                      const CoarseIMUInitOptimizerSettings &settingsPassed)
-    : transformDSOToIMU(transformDSOToIMU), imuCalibration(imuCalibration), settings(settingsPassed)
+                                                      const CoarseIMUInitOptimizerSettings &settingsPassed,
+                                                      dso::Settings *dsoSettings)
+    : transformDSOToIMU(transformDSOToIMU), imuCalibration(imuCalibration), settings(settingsPassed), dsoSettings(dsoSettings)
 {
   gtsam::Vector6 posePriorVector;
   posePriorVector.segment(0, 3).setConstant(settings.priorRotSigma);
@@ -206,7 +207,7 @@ dmvio::CoarseIMUInitOptimizer::OptimizationResult dmvio::CoarseIMUInitOptimizer:
   {
     std::cout << "Large CoarseIMUInitializer error! Requesting full reset! " << normalizedError << std::endl;
     good = false;
-    dso::setting_fullResetRequested = true;
+    dsoSettings->fullResetRequested = true;
   }
 
   return OptimizationResult(optimizer.iterations(), error, normalizedError, good);

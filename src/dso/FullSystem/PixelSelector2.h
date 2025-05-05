@@ -26,6 +26,7 @@
 #pragma once
 
 #include "util/NumType.h"
+#include "util/settings.h"
 
 namespace dso
 {
@@ -48,7 +49,7 @@ namespace dso
         const FrameHessian *const fh,
         float *map_out, float density, int recursionsLeft = 1, bool plot = false, float thFactor = 1);
 
-    PixelSelector(int w, int h);
+    PixelSelector(int w, int h, Settings *settings);
     ~PixelSelector();
     int currentPotential;
 
@@ -71,6 +72,8 @@ namespace dso
     int bW, bH;
     // number of blocks in x and y dimension.
     int nbW, nbH;
+
+    Settings *settings;
   };
 
 }

@@ -29,7 +29,7 @@
 namespace dso
 {
 
-  PointHessian::PointHessian(const ImmaturePoint *const rawPoint, CalibHessian *Hcalib)
+  PointHessian::PointHessian(const ImmaturePoint *const rawPoint, CalibHessian *Hcalib, Settings *settings) : settings(settings)
   {
     instanceCounter++;
     host = rawPoint->host;
@@ -122,7 +122,7 @@ namespace dso
   void FrameHessian::makeImages(float *color, CalibHessian *HCalib)
   {
 
-    for (int i = 0; i < pyrLevelsUsed; i++)
+    for (int i = 0; i < settings->pyrLevelsUsed; i++)
     {
       dIp[i] = new Eigen::Vector3f[wG[i] * hG[i]];
       absSquaredGrad[i] = new float[wG[i] * hG[i]];
@@ -135,7 +135,7 @@ namespace dso
     for (int i = 0; i < w * h; i++)
       dI[i][0] = color[i];
 
-    for (int lvl = 0; lvl < pyrLevelsUsed; lvl++)
+    for (int lvl = 0; lvl < settings->pyrLevelsUsed; lvl++)
     {
       int wl = wG[lvl], hl = hG[lvl];
       Eigen::Vector3f *dI_l = dIp[lvl];
@@ -172,7 +172,7 @@ namespace dso
 
         dabs_l[idx] = dx * dx + dy * dy;
 
-        if (setting_gammaWeightsPixelSelect == 1 && HCalib != 0)
+        if (settings->gammaWeightsPixelSelect == 1 && HCalib != 0)
         {
           float gw = HCalib->getBGradOnly((float)(dI_l[idx][0]));
           dabs_l[idx] *= gw * gw; // convert to gradient of original color space (before removing response).

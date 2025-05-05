@@ -38,11 +38,6 @@
 
 namespace dso
 {
-
-  bool EFAdjointsValid = false;
-  bool EFIndicesValid = false;
-  bool EFDeltaValid = false;
-
   void EnergyFunctional::setAdjointsF(CalibHessian *Hcalib)
   {
 
@@ -85,7 +80,7 @@ namespace dso
         adHost[h + t * nFrames] = AH;
         adTarget[h + t * nFrames] = AT;
       }
-    cPrior = VecC::Constant(setting_initialCalibHessian);
+    cPrior = VecC::Constant(settings->initialCalibHessian);
 
     if (adHostF != 0)
       delete[] adHostF;
@@ -106,7 +101,7 @@ namespace dso
     EFAdjointsValid = true;
   }
 
-  EnergyFunctional::EnergyFunctional(dmvio::BAGTSAMIntegration &gtsamIntegration) : gtsamIntegration(gtsamIntegration)
+  EnergyFunctional::EnergyFunctional(dmvio::BAGTSAMIntegration &gtsamIntegration, Settings *settings) : gtsamIntegration(gtsamIntegration), settings(settings)
   {
     adHost = 0;
     adTarget = 0;
@@ -327,7 +322,7 @@ namespace dso
 
     double firstVal = delta.dot(2 * bM + HM * delta);
 
-    if (setting_useGTSAMIntegration)
+    if (settings->useGTSAMIntegration)
     {
       if (!useNewValues)
       {
@@ -468,7 +463,7 @@ namespace dso
   }
   EFPoint *EnergyFunctional::insertPoint(PointHessian *ph)
   {
-    EFPoint *efp = new EFPoint(ph, ph->host->efFrame);
+    EFPoint *efp = new EFPoint(ph, ph->host->efFrame, settings);
     efp->idxInPoints = ph->host->efFrame->points.size();
     ph->host->efFrame->points.push_back(efp);
 
@@ -515,7 +510,7 @@ namespace dso
     //	std::sort(eigenvaluesPre.data(), eigenvaluesPre.data()+eigenvaluesPre.size());
     //
 
-    if (setting_useGTSAMIntegration)
+    if (settings->useGTSAMIntegration)
     {
       // When adding additional factors with GTSAM they need to be accounted for during keyframe marginalization.
       // Hence we move the whole keyframe marginalization to the GTSAMIntegration.
@@ -544,7 +539,7 @@ namespace dso
       bMForGTSAM.setZero();
     }
 
-    //    if(!setting_useGTSAMIntegration) // enable to remove the redundant visual only marginalization.
+    //    if(!settings->useGTSAMIntegration) // enable to remove the redundant visual only marginalization.
     if (true)
     {
       dmvio::TimeMeasurement measVis("VisualMarginalization");
@@ -657,7 +652,7 @@ namespace dso
         EFPoint *p = f->points[i];
         if (p->stateFlag == EFPointStatus::PS_MARGINALIZE)
         {
-          p->priorF *= setting_idepthFixPriorMargFac;
+          p->priorF *= settings->idepthFixPriorMargFac;
           for (EFResidual *r : p->residualsAll)
             if (r->isActive())
               connectivityMap[(((uint64_t)r->host->frameID) << 32) + ((uint64_t)r->target->frameID)][1]++;
@@ -684,7 +679,7 @@ namespace dso
     MatXX H = M - Msc;
     VecX b = Mb - Mbsc;
 
-    if (setting_solverMode & SOLVER_ORTHOGONALIZE_POINTMARG)
+    if (settings->solverMode & SOLVER_ORTHOGONALIZE_POINTMARG)
     {
       // have a look if prior is there.
       bool haveFirstFrame = false;
@@ -696,13 +691,13 @@ namespace dso
         orthogonalize(&b, &H);
     }
 
-    HM += setting_margWeightFac * H;
-    bM += setting_margWeightFac * b;
+    HM += settings->margWeightFac * H;
+    bM += settings->margWeightFac * b;
 
-    HMForGTSAM += setting_margWeightFac * H;
-    bMForGTSAM += setting_margWeightFac * b;
+    HMForGTSAM += settings->margWeightFac * H;
+    bMForGTSAM += settings->margWeightFac * b;
 
-    if (setting_solverMode & SOLVER_ORTHOGONALIZE_FULL)
+    if (settings->solverMode & SOLVER_ORTHOGONALIZE_FULL)
       orthogonalize(&bM, &HM);
 
     EFIndicesValid = false;
@@ -757,9 +752,9 @@ namespace dso
     std::vector<VecX> ns;
     ns.insert(ns.end(), lastNullspaces_pose.begin(), lastNullspaces_pose.end());
     ns.insert(ns.end(), lastNullspaces_scale.begin(), lastNullspaces_scale.end());
-    //	if(setting_affineOptModeA <= 0)
+    //	if(settings->affineOptModeA <= 0)
     //		ns.insert(ns.end(), lastNullspaces_affA.begin(), lastNullspaces_affA.end());
-    //	if(setting_affineOptModeB <= 0)
+    //	if(settings->affineOptModeB <= 0)
     //		ns.insert(ns.end(), lastNullspaces_affB.begin(), lastNullspaces_affB.end());
 
     // make Nullspaces matrix
@@ -781,7 +776,7 @@ namespace dso
     }
     for (int i = 0; i < SNN.size(); i++)
     {
-      if (SNN[i] > setting_solverModeDelta * maxSv)
+      if (SNN[i] > settings->solverModeDelta * maxSv)
         SNN[i] = 1.0 / SNN[i];
       else
         SNN[i] = 0;
@@ -805,9 +800,9 @@ namespace dso
 
   void EnergyFunctional::solveSystemF(int iteration, double lambda, CalibHessian *HCalib)
   {
-    if (setting_solverMode & SOLVER_USE_GN)
+    if (settings->solverMode & SOLVER_USE_GN)
       lambda = 0;
-    if (setting_solverMode & SOLVER_FIX_LAMBDA)
+    if (settings->solverMode & SOLVER_FIX_LAMBDA)
       lambda = 1e-5;
 
     assert(EFDeltaValid);
@@ -817,11 +812,11 @@ namespace dso
     MatXX HL_top, HA_top, H_sc;
     VecX bL_top, bA_top, bM_top, b_sc;
 
-    accumulateAF_MT(HA_top, bA_top, multiThreading);
+    accumulateAF_MT(HA_top, bA_top, settings->multiThreading);
 
-    accumulateLF_MT(HL_top, bL_top, multiThreading);
+    accumulateLF_MT(HL_top, bL_top, settings->multiThreading);
 
-    accumulateSCF_MT(H_sc, b_sc, multiThreading);
+    accumulateSCF_MT(H_sc, b_sc, settings->multiThreading);
 
     bM_top = (bM + HM * getStitchedDeltaF());
     VecX bMGTSAM_top = (bMForGTSAM + HMForGTSAM * getStitchedDeltaF());
@@ -829,7 +824,7 @@ namespace dso
     MatXX HFinal_top;
     VecX bFinal_top;
 
-    if (setting_solverMode & SOLVER_ORTHOGONALIZE_SYSTEM)
+    if (settings->solverMode & SOLVER_ORTHOGONALIZE_SYSTEM)
     {
       // have a look if prior is there.
       bool haveFirstFrame = false;
@@ -867,7 +862,7 @@ namespace dso
     }
 
     VecX x;
-    if (setting_solverMode & SOLVER_SVD)
+    if (settings->solverMode & SOLVER_SVD)
     {
       VecX SVecI = HFinal_top.diagonal().cwiseSqrt().cwiseInverse();
       MatXX HFinalScaled = SVecI.asDiagonal() * HFinal_top * SVecI.asDiagonal();
@@ -888,13 +883,13 @@ namespace dso
       int setZero = 0;
       for (int i = 0; i < Ub.size(); i++)
       {
-        if (S[i] < setting_solverModeDelta * maxSv)
+        if (S[i] < settings->solverModeDelta * maxSv)
         {
           Ub[i] = 0;
           setZero++;
         }
 
-        if ((setting_solverMode & SOLVER_SVD_CUT7) && (i >= Ub.size() - 7))
+        if ((settings->solverMode & SOLVER_SVD_CUT7) && (i >= Ub.size() - 7))
         {
           Ub[i] = 0;
           setZero++;
@@ -908,7 +903,7 @@ namespace dso
     else
     {
       VecX myX;
-      if (setting_useGTSAMIntegration)
+      if (settings->useGTSAMIntegration)
       {
         // Instead of directly solving the system we instead pass it to the GTSAMIntegration which will add more
         // factors and then solve it for us. This is mathematically correct as long as the new residuals are
@@ -930,7 +925,7 @@ namespace dso
       // Important: x is -step !
     }
 
-    if ((setting_solverMode & SOLVER_ORTHOGONALIZE_X) || (iteration >= 2 && (setting_solverMode & SOLVER_ORTHOGONALIZE_X_LATER)))
+    if ((settings->solverMode & SOLVER_ORTHOGONALIZE_X) || (iteration >= 2 && (settings->solverMode & SOLVER_ORTHOGONALIZE_X_LATER)))
     {
       VecX xOld = x;
       orthogonalize(&x, 0);
@@ -940,7 +935,7 @@ namespace dso
 
     // resubstituteF(x, HCalib);
     currentLambda = lambda;
-    resubstituteF_MT(x, HCalib, multiThreading);
+    resubstituteF_MT(x, HCalib, settings->multiThreading);
     currentLambda = 0;
   }
   void EnergyFunctional::makeIDX()
