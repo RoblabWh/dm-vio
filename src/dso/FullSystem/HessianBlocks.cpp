@@ -124,27 +124,27 @@ namespace dso
 
     for (int i = 0; i < settings->pyrLevelsUsed; i++)
     {
-      dIp[i] = new Eigen::Vector3f[wG[i] * hG[i]];
-      absSquaredGrad[i] = new float[wG[i] * hG[i]];
+      dIp[i] = new Eigen::Vector3f[settings->calibG.wG[i] * settings->calibG.hG[i]];
+      absSquaredGrad[i] = new float[settings->calibG.wG[i] * settings->calibG.hG[i]];
     }
     dI = dIp[0];
 
     // make d0
-    int w = wG[0];
-    int h = hG[0];
+    int w = settings->calibG.wG[0];
+    int h = settings->calibG.hG[0];
     for (int i = 0; i < w * h; i++)
       dI[i][0] = color[i];
 
     for (int lvl = 0; lvl < settings->pyrLevelsUsed; lvl++)
     {
-      int wl = wG[lvl], hl = hG[lvl];
+      int wl = settings->calibG.wG[lvl], hl = settings->calibG.hG[lvl];
       Eigen::Vector3f *dI_l = dIp[lvl];
 
       float *dabs_l = absSquaredGrad[lvl];
       if (lvl > 0)
       {
         int lvlm1 = lvl - 1;
-        int wlm1 = wG[lvlm1];
+        int wlm1 = settings->calibG.wG[lvlm1];
         Eigen::Vector3f *dI_lm = dIp[lvlm1];
 
         for (int y = 0; y < hl; y++)

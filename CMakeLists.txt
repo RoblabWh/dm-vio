@@ -80,7 +80,6 @@ set(dso_SOURCE_FILES
   ${DSO_SOURCE_DIR}/OptimizationBackend/EnergyFunctionalStructs.cpp
   ${DSO_SOURCE_DIR}/util/settings.cpp
   ${DSO_SOURCE_DIR}/util/Undistort.cpp
-  ${DSO_SOURCE_DIR}/util/globalCalib.cpp
 )
 
 set(dmvio_SOURCE_FILES

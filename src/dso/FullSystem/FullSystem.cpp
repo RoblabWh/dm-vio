@@ -37,7 +37,6 @@
 #include <Eigen/LU>
 #include <algorithm>
 #include "IOWrapper/ImageDisplay.h"
-#include "util/globalCalib.h"
 #include <Eigen/SVD>
 #include <Eigen/Eigenvalues>
 #include "FullSystem/PixelSelector.h"
@@ -73,7 +72,7 @@ namespace dso
       : linearizeOperation(linearizeOperationPassed), imuIntegration(&Hcalib, imuCalibration, imuSettings,
                                                                      linearizeOperation, settings), settings(settings),
         secondKeyframeDone(false), gravityInit(imuSettings.numMeasurementsGravityInit, imuCalibration),
-        shellPoseMutex(FrameShell::shellPoseMutex)
+        shellPoseMutex(FrameShell::shellPoseMutex), Hcalib(settings->calibG)
   {
     settings->useGTSAMIntegration = settings->useIMU;
     baIntegration = imuIntegration.getBAGTSAMIntegration().get();
@@ -138,13 +137,13 @@ namespace dso
 
     assert(retstat != 293847);
 
-    selectionMap = new float[wG[0] * hG[0]];
+    selectionMap = new float[settings->calibG.wG[0] * settings->calibG.hG[0]];
 
-    coarseDistanceMap = new CoarseDistanceMap(wG[0], hG[0], settings);
-    coarseTracker = new CoarseTracker(wG[0], hG[0], imuIntegration, settings);
-    coarseTracker_forNewKF = new CoarseTracker(wG[0], hG[0], imuIntegration, settings);
-    coarseInitializer = new CoarseInitializer(wG[0], hG[0], settings);
-    pixelSelector = new PixelSelector(wG[0], hG[0], settings);
+    coarseDistanceMap = new CoarseDistanceMap(settings->calibG.wG[0], settings->calibG.hG[0], settings);
+    coarseTracker = new CoarseTracker(settings->calibG.wG[0], settings->calibG.hG[0], imuIntegration, settings);
+    coarseTracker_forNewKF = new CoarseTracker(settings->calibG.wG[0], settings->calibG.hG[0], imuIntegration, settings);
+    coarseInitializer = new CoarseInitializer(settings->calibG.wG[0], settings->calibG.hG[0], settings);
+    pixelSelector = new PixelSelector(settings->calibG.wG[0], settings->calibG.hG[0], settings);
 
     statistics_lastNumOptIts = 0;
     statistics_numDroppedPoints = 0;
@@ -672,10 +671,10 @@ namespace dso
         int u = ptp[0] / ptp[2] + 0.5f;
         int v = ptp[1] / ptp[2] + 0.5f;
 
-        if ((u > 0 && v > 0 && u < wG[1] && v < hG[1]))
+        if ((u > 0 && v > 0 && u < settings->calibG.wG[1] && v < settings->calibG.hG[1]))
         {
 
-          float dist = coarseDistanceMap->fwdWarpedIDDistFinal[u + wG[1] * v] + (ptp[0] - floorf((float)(ptp[0])));
+          float dist = coarseDistanceMap->fwdWarpedIDDistFinal[u + settings->calibG.wG[1] * v] + (ptp[0] - floorf((float)(ptp[0])));
 
           if (dist >= currentMinActDist * ph->my_type)
           {
@@ -1015,9 +1014,9 @@ namespace dso
 
         // BRIGHTNESS CHECK
         needToMakeKF = allFrameHistory.size() == 1 ||
-                       settings->kfGlobalWeight * settings->maxShiftWeightT * sqrtf((double)tres[1]) / (wG[0] + hG[0]) +
-                               settings->kfGlobalWeight * settings->maxShiftWeightR * sqrtf((double)tres[2]) / (wG[0] + hG[0]) +
-                               settings->kfGlobalWeight * settings->maxShiftWeightRT * sqrtf((double)tres[3]) / (wG[0] + hG[0]) +
+                       settings->kfGlobalWeight * settings->maxShiftWeightT * sqrtf((double)tres[1]) / (settings->calibG.wG[0] + settings->calibG.hG[0]) +
+                               settings->kfGlobalWeight * settings->maxShiftWeightR * sqrtf((double)tres[2]) / (settings->calibG.wG[0] + settings->calibG.hG[0]) +
+                               settings->kfGlobalWeight * settings->maxShiftWeightRT * sqrtf((double)tres[3]) / (settings->calibG.wG[0] + settings->calibG.hG[0]) +
                                settings->kfGlobalWeight * settings->maxAffineWeight * fabs(logf((float)refToFh[0])) >
                            1 ||
                        2 * coarseTracker->firstCoarseRMSE < tres[0] ||
@@ -1126,7 +1125,7 @@ namespace dso
     {
       if (settings->goStepByStep && lastRefStopID != coarseTracker->refFrameID)
       {
-        MinimalImageF3 img(wG[0], hG[0], fh->dI);
+        MinimalImageF3 img(settings->calibG.wG[0], settings->calibG.hG[0], fh->dI);
         IOWrap::displayImage("frameToTrack", &img);
         while (true)
         {
@@ -1499,9 +1498,9 @@ namespace dso
 
     baIntegration->addFirstBAFrame(firstFrame->shell->id);
 
-    firstFrame->pointHessians.reserve(wG[0] * hG[0] * 0.2f);
-    firstFrame->pointHessiansMarginalized.reserve(wG[0] * hG[0] * 0.2f);
-    firstFrame->pointHessiansOut.reserve(wG[0] * hG[0] * 0.2f);
+    firstFrame->pointHessians.reserve(settings->calibG.wG[0] * settings->calibG.hG[0] * 0.2f);
+    firstFrame->pointHessiansMarginalized.reserve(settings->calibG.wG[0] * settings->calibG.hG[0] * 0.2f);
+    firstFrame->pointHessiansOut.reserve(settings->calibG.wG[0] * settings->calibG.hG[0] * 0.2f);
 
     float sumID = 1e-5, numID = 1e-5;
 
@@ -1598,10 +1597,10 @@ namespace dso
     newFrame->pointHessiansMarginalized.reserve(numPointsTotal * 1.2f);
     newFrame->pointHessiansOut.reserve(numPointsTotal * 1.2f);
 
-    for (int y = patternPadding + 1; y < hG[0] - patternPadding - 2; y++)
-      for (int x = patternPadding + 1; x < wG[0] - patternPadding - 2; x++)
+    for (int y = patternPadding + 1; y < settings->calibG.hG[0] - patternPadding - 2; y++)
+      for (int x = patternPadding + 1; x < settings->calibG.wG[0] - patternPadding - 2; x++)
       {
-        int i = x + y * wG[0];
+        int i = x + y * settings->calibG.wG[0];
         if (selectionMap[i] == 0)
           continue;
 

@@ -23,9 +23,7 @@
 
 #pragma once
 
-#include "util/globalCalib.h"
 #include "vector"
-
 #include "util/NumType.h"
 #include <iostream>
 #include <fstream>

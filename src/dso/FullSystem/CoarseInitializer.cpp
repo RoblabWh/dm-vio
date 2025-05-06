@@ -936,8 +936,8 @@ namespace dso
 
   void CoarseInitializer::makeK(CalibHessian *HCalib)
   {
-    w[0] = wG[0];
-    h[0] = hG[0];
+    w[0] = settings->calibG.wG[0];
+    h[0] = settings->calibG.hG[0];
 
     fx[0] = HCalib->fxl();
     fy[0] = HCalib->fyl();

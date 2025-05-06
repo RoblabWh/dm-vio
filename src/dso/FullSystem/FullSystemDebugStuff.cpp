@@ -38,7 +38,6 @@
 #include <algorithm>
 #include "IOWrapper/ImageDisplay.h"
 #include "IOWrapper/ImageRW.h"
-#include "util/globalCalib.h"
 #include <Eigen/SVD>
 #include <Eigen/Eigenvalues>
 #include <algorithm>
@@ -55,7 +54,7 @@ namespace dso
       return;
     if (!settings->render_plotTrackingFull)
       return;
-    int wh = hG[0] * wG[0];
+    int wh = settings->calibG.hG[0] * settings->calibG.wG[0];
 
     int idx = 0;
     for (FrameHessian *f : frameHessians)
@@ -65,7 +64,7 @@ namespace dso
       // make images for all frames. will be deleted by the FrameHessian's destructor.
       for (FrameHessian *f2 : frameHessians)
         if (f2->debugImage == 0)
-          f2->debugImage = new MinimalImageB3(wG[0], hG[0]);
+          f2->debugImage = new MinimalImageB3(settings->calibG.wG[0], settings->calibG.hG[0]);
 
       for (FrameHessian *f2 : frameHessians)
       {
@@ -159,10 +158,10 @@ namespace dso
       minIdJetVisDebug = minID;
     }
 
-    int wh = hG[0] * wG[0];
+    int wh = settings->calibG.hG[0] * settings->calibG.wG[0];
     for (unsigned int f = 0; f < frameHessians.size(); f++)
     {
-      MinimalImageB3 *img = new MinimalImageB3(wG[0], hG[0]);
+      MinimalImageB3 *img = new MinimalImageB3(settings->calibG.wG[0], settings->calibG.hG[0]);
       images.push_back(img);
       // float* fd = frameHessians[f]->I;
       Eigen::Vector3f *fd = frameHessians[f]->dI;
@@ -321,7 +320,7 @@ namespace dso
     {
       for (unsigned int f = 0; f < frameHessians.size(); f++)
       {
-        MinimalImageB3 *img = new MinimalImageB3(wG[0], hG[0]);
+        MinimalImageB3 *img = new MinimalImageB3(settings->calibG.wG[0], settings->calibG.hG[0]);
         Eigen::Vector3f *fd = frameHessians[f]->dI;
 
         for (int i = 0; i < wh; i++)

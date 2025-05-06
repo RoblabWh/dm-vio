@@ -24,12 +24,8 @@
  */
 
 #include "FullSystem/PixelSelector2.h"
-
-//
-
 #include "util/NumType.h"
 #include "IOWrapper/ImageDisplay.h"
-#include "util/globalCalib.h"
 #include "FullSystem/HessianBlocks.h"
 #include "util/globalFuncs.h"
 
@@ -92,8 +88,8 @@ namespace dso
     gradHistFrame = fh;
     float *mapmax0 = fh->absSquaredGrad[0];
 
-    int w = wG[0];
-    int h = hG[0];
+    int w = settings->calibG.wG[0];
+    int h = settings->calibG.hG[0];
 
     int w32 = nbW;
     int h32 = nbH;
@@ -264,7 +260,7 @@ namespace dso
     int numHaveSub = numHave;
     if (quotia < 0.95)
     {
-      int wh = wG[0] * hG[0];
+      int wh = settings->calibG.wG[0] * settings->calibG.hG[0];
       int rn = 0;
       unsigned char charTH = 255 * quotia;
       for (int i = 0; i < wh; i++)
@@ -291,8 +287,8 @@ namespace dso
 
     if (plot)
     {
-      int w = wG[0];
-      int h = hG[0];
+      int w = settings->calibG.wG[0];
+      int h = settings->calibG.hG[0];
 
       MinimalImageB3 img(w, h);
 
@@ -332,10 +328,10 @@ namespace dso
     float *mapmax1 = fh->absSquaredGrad[1];
     float *mapmax2 = fh->absSquaredGrad[2];
 
-    int w = wG[0];
-    int w1 = wG[1];
-    int w2 = wG[2];
-    int h = hG[0];
+    int w = settings->calibG.wG[0];
+    int w1 = settings->calibG.wG[1];
+    int w2 = settings->calibG.wG[2];
+    int h = settings->calibG.hG[0];
 
     const Vec2f directions[16] = {
         Vec2f(0, 1.0000),

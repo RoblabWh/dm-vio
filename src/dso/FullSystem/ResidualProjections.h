@@ -43,12 +43,12 @@ namespace dso
       const float &u_pt, const float &v_pt,
       const float &idepth,
       const Mat33f &KRKi, const Vec3f &Kt,
-      float &Ku, float &Kv)
+      float &Ku, float &Kv, const GlobalCalib &calibG)
   {
     Vec3f ptp = KRKi * Vec3f(u_pt, v_pt, 1) + Kt * idepth;
     Ku = ptp[0] / ptp[2];
     Kv = ptp[1] / ptp[2];
-    return Ku > 1.1f && Kv > 1.1f && Ku < wM3G && Kv < hM3G;
+    return Ku > 1.1f && Kv > 1.1f && Ku < calibG.wM3G && Kv < calibG.hM3G;
   }
 
   EIGEN_STRONG_INLINE bool projectPoint(
@@ -58,7 +58,7 @@ namespace dso
       CalibHessian *const &HCalib,
       const Mat33f &R, const Vec3f &t,
       float &drescale, float &u, float &v,
-      float &Ku, float &Kv, Vec3f &KliP, float &new_idepth)
+      float &Ku, float &Kv, Vec3f &KliP, float &new_idepth, const GlobalCalib &calibG)
   {
     KliP = Vec3f(
         (u_pt + dx - HCalib->cxl()) * HCalib->fxli(),
@@ -77,7 +77,7 @@ namespace dso
     Ku = u * HCalib->fxl() + HCalib->cxl();
     Kv = v * HCalib->fyl() + HCalib->cyl();
 
-    return Ku > 1.1f && Kv > 1.1f && Ku < wM3G && Kv < hM3G;
+    return Ku > 1.1f && Kv > 1.1f && Ku < calibG.wM3G && Kv < calibG.hM3G;
   }
 
 }

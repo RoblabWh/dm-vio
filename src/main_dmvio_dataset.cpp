@@ -40,7 +40,6 @@
 #include "dso/util/settings.h"
 #include "dso/util/globalFuncs.h"
 #include "dso/util/DatasetReader.h"
-#include "dso/util/globalCalib.h"
 #include "util/TimeMeasurement.h"
 
 #include "dso/util/NumType.h"

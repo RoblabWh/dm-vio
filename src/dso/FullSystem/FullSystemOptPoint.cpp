@@ -35,7 +35,6 @@
 #include <Eigen/LU>
 #include <algorithm>
 #include "IOWrapper/ImageDisplay.h"
-#include "util/globalCalib.h"
 
 #include <Eigen/SVD>
 #include <Eigen/Eigenvalues>

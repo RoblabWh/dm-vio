@@ -40,7 +40,7 @@ namespace dso
       int dx = patternP[idx][0];
       int dy = patternP[idx][1];
 
-      Vec3f ptc = getInterpolatedElement33BiLin(host->dI, u + dx, v + dy, wG[0]);
+      Vec3f ptc = getInterpolatedElement33BiLin(host->dI, u + dx, v + dy, settings->calibG.wG[0]);
 
       color[idx] = ptc[0];
       if (!std::isfinite(color[idx]))
@@ -77,7 +77,7 @@ namespace dso
       return lastTraceStatus;
 
     debugPrint = false; // rand()%100==0;
-    float maxPixSearch = (wG[0] + hG[0]) * settings->maxPixSearch;
+    float maxPixSearch = (settings->calibG.wG[0] + settings->calibG.hG[0]) * settings->maxPixSearch;
 
     if (debugPrint)
       printf("trace pt (%.1f %.1f) from frame %d to %d. Range %f -> %f. t %f %f %f!\n",
@@ -117,7 +117,7 @@ namespace dso
     boundU = std::max(boundU, realBoundU);
     boundV = std::max(boundV, realBoundV);
 
-    if (!(uMin > boundU && vMin > boundV && uMin < wG[0] - boundU - 1 && vMin < hG[0] - boundV - 1))
+    if (!(uMin > boundU && vMin > boundV && uMin < settings->calibG.wG[0] - boundU - 1 && vMin < settings->calibG.hG[0] - boundV - 1))
     {
       if (debugPrint)
         printf("OOB uMin %f %f - %f %f %f (id %f-%f)!\n",
@@ -137,7 +137,7 @@ namespace dso
       uMax = ptpMax[0] / ptpMax[2];
       vMax = ptpMax[1] / ptpMax[2];
 
-      if (!(uMax > boundU && vMax > boundV && uMax < wG[0] - boundU - 1 && vMax < hG[0] - boundV - 1))
+      if (!(uMax > boundU && vMax > boundV && uMax < settings->calibG.wG[0] - boundU - 1 && vMax < settings->calibG.hG[0] - boundV - 1))
       {
         if (debugPrint)
           printf("OOB uMax  %f %f - %f %f!\n", u, v, uMax, vMax);
@@ -179,7 +179,7 @@ namespace dso
       vMax = vMin + dist * dy * d;
 
       // may still be out!
-      if (!(uMax > boundU && vMax > boundV && uMax < wG[0] - boundU - 1 && vMax < hG[0] - boundV - 1))
+      if (!(uMax > boundU && vMax > boundV && uMax < settings->calibG.wG[0] - boundU - 1 && vMax < settings->calibG.hG[0] - boundV - 1))
       {
         if (debugPrint)
           printf("OOB uMax-coarse %f %f %f!\n", uMax, vMax, ptpMax[2]);
@@ -268,7 +268,7 @@ namespace dso
         float hitColor = getInterpolatedElement31(frame->dI,
                                                   (float)(ptx + rotatetPattern[idx][0]),
                                                   (float)(pty + rotatetPattern[idx][1]),
-                                                  wG[0]);
+                                                  settings->calibG.wG[0]);
 
         if (!std::isfinite(hitColor))
         {
@@ -320,7 +320,7 @@ namespace dso
       {
         float posU = (float)(bestU + rotatetPattern[idx][0]);
         float posV = (float)(bestV + rotatetPattern[idx][1]);
-        if (posU < 0 || posV < 0 || posU >= wG[0] - 1 || posV >= hG[0] - 1)
+        if (posU < 0 || posV < 0 || posU >= settings->calibG.wG[0] - 1 || posV >= settings->calibG.hG[0] - 1)
         {
           if (debugPrint)
             printf("OOB uMax  %f %f - %f %f!\n", posU, posV, uMax, vMax);
@@ -329,7 +329,7 @@ namespace dso
           return lastTraceStatus = ImmaturePointStatus::IPS_OOB;
         }
 
-        Vec3f hitColor = getInterpolatedElement33(frame->dI, posU, posV, wG[0]);
+        Vec3f hitColor = getInterpolatedElement33(frame->dI, posU, posV, settings->calibG.wG[0]);
 
         if (!std::isfinite((float)hitColor[0]))
         {
@@ -449,7 +449,7 @@ namespace dso
     Vec3f KliP;
 
     projectPoint(this->u, this->v, idepth, 0, 0, HCalib,
-                 precalc->PRE_RTll, PRE_tTll, drescale, u, v, Ku, Kv, KliP, new_idepth);
+                 precalc->PRE_RTll, PRE_tTll, drescale, u, v, Ku, Kv, KliP, new_idepth, settings->calibG);
 
     float dxdd = (PRE_tTll[0] - PRE_tTll[2] * u) * HCalib->fxl();
     float dydd = (PRE_tTll[1] - PRE_tTll[2] * v) * HCalib->fyl();
@@ -472,12 +472,12 @@ namespace dso
     for (int idx = 0; idx < patternNum; idx++)
     {
       float Ku, Kv;
-      if (!projectPoint(this->u + patternP[idx][0], this->v + patternP[idx][1], idepth, PRE_KRKiTll, PRE_KtTll, Ku, Kv))
+      if (!projectPoint(this->u + patternP[idx][0], this->v + patternP[idx][1], idepth, PRE_KRKiTll, PRE_KtTll, Ku, Kv, settings->calibG))
       {
         return 1e10;
       }
 
-      Vec3f hitColor = (getInterpolatedElement33(dIl, Ku, Kv, wG[0]));
+      Vec3f hitColor = (getInterpolatedElement33(dIl, Ku, Kv, settings->calibG.wG[0]));
       if (!std::isfinite((float)hitColor[0]))
       {
         return 1e10;
@@ -531,13 +531,13 @@ namespace dso
       Vec3f KliP;
 
       if (!projectPoint(this->u, this->v, idepth, dx, dy, HCalib,
-                        PRE_RTll, PRE_tTll, drescale, u, v, Ku, Kv, KliP, new_idepth))
+                        PRE_RTll, PRE_tTll, drescale, u, v, Ku, Kv, KliP, new_idepth, settings->calibG))
       {
         tmpRes->state_NewState = ResState::OOB;
         return tmpRes->state_energy;
       }
 
-      Vec3f hitColor = (getInterpolatedElement33(dIl, Ku, Kv, wG[0]));
+      Vec3f hitColor = (getInterpolatedElement33(dIl, Ku, Kv, settings->calibG.wG[0]));
 
       if (!std::isfinite((float)hitColor[0]))
       {

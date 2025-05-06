@@ -28,6 +28,7 @@
 #include <string.h>
 #include <string>
 #include <cmath>
+#include "util/NumType.h"
 
 namespace dso
 {
@@ -46,6 +47,23 @@ namespace dso
 
 // ============== PARAMETERS TO BE DECIDED ON COMPILE TIME =================
 #define PYR_LEVELS 6
+
+  struct GlobalCalib
+  {
+    GlobalCalib() = default;
+    GlobalCalib(int w, int h, const Eigen::Matrix3f &K, int &pyrLevelsUsed);
+
+    int wG[PYR_LEVELS], hG[PYR_LEVELS];
+    float fxG[PYR_LEVELS], fyG[PYR_LEVELS],
+        cxG[PYR_LEVELS], cyG[PYR_LEVELS];
+
+    float fxiG[PYR_LEVELS], fyiG[PYR_LEVELS],
+        cxiG[PYR_LEVELS], cyiG[PYR_LEVELS];
+
+    Eigen::Matrix3f KG[PYR_LEVELS], KiG[PYR_LEVELS];
+
+    float wM3G, hM3G;
+  };
 
   struct Settings
   {
@@ -200,6 +218,8 @@ namespace dso
     int multiCameraIndex = 0;
 
     int sparsityFactor = 5; // not actually a setting, only some legacy stuff for coarse initializer.
+
+    GlobalCalib calibG;
 
     void handleKey(char k)
     {

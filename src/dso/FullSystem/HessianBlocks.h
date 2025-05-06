@@ -26,9 +26,7 @@
 #pragma once
 #define MAX_ACTIVE_FRAMES 100
 
-#include "util/globalCalib.h"
 #include "vector"
-
 #include <iostream>
 #include <fstream>
 #include "util/NumType.h"
@@ -301,14 +299,14 @@ namespace dso
     VecC value_minus_value_zero;
 
     inline ~CalibHessian() { instanceCounter--; }
-    inline CalibHessian()
+    inline CalibHessian(const GlobalCalib &calibG)
     {
 
       VecC initial_value = VecC::Zero();
-      initial_value[0] = fxG[0];
-      initial_value[1] = fyG[0];
-      initial_value[2] = cxG[0];
-      initial_value[3] = cyG[0];
+      initial_value[0] = calibG.fxG[0];
+      initial_value[1] = calibG.fyG[0];
+      initial_value[2] = calibG.cxG[0];
+      initial_value[3] = calibG.cyG[0];
 
       setValueScaled(initial_value);
       value_zero = value;
