@@ -65,7 +65,8 @@ bool useSampleOutput = false;
 
 using namespace dso;
 
-dmvio::MainSettings mainSettings;
+dso::Settings dsoSettings;
+dmvio::MainSettings mainSettings(&dsoSettings);
 dmvio::IMUCalibration imuCalibration;
 dmvio::IMUSettings imuSettings;
 
@@ -90,7 +91,7 @@ void exitThread()
 void run(DatasetReader *reader, IOWrap::PangolinDSOViewer *viewer)
 {
 
-  if (setting_photometricCalibration > 0 && reader->getPhotometricGamma() == 0)
+  if (dsoSettings.photometricCalibration > 0 && reader->getPhotometricGamma() == 0)
   {
     printf("ERROR: dont't have photometric calibation. Need to use commandline options mode=1 or mode=2 ");
     exit(1);
@@ -101,7 +102,7 @@ void run(DatasetReader *reader, IOWrap::PangolinDSOViewer *viewer)
   int linc = 1;
   if (reverse)
   {
-    assert(!setting_useIMU); // Reverse is not supported with IMU data at the moment!
+    assert(!dsoSettings.useIMU); // Reverse is not supported with IMU data at the moment!
     printf("REVERSE!!!!");
     lstart = end - 1;
     if (lstart >= reader->getNumImages())
@@ -112,14 +113,14 @@ void run(DatasetReader *reader, IOWrap::PangolinDSOViewer *viewer)
 
   bool linearizeOperation = (mainSettings.playbackSpeed == 0);
 
-  if (linearizeOperation && setting_minFramesBetweenKeyframes < 0)
+  if (linearizeOperation && dsoSettings.minFramesBetweenKeyframes < 0)
   {
-    setting_minFramesBetweenKeyframes = -setting_minFramesBetweenKeyframes;
-    std::cout << "Using setting_minFramesBetweenKeyframes=" << setting_minFramesBetweenKeyframes
+    dsoSettings.minFramesBetweenKeyframes = -dsoSettings.minFramesBetweenKeyframes;
+    std::cout << "Using dsoSettings.minFramesBetweenKeyframes=" << dsoSettings.minFramesBetweenKeyframes
               << " because of non-realtime mode." << std::endl;
   }
 
-  FullSystem *fullSystem = new FullSystem(linearizeOperation, imuCalibration, imuSettings);
+  FullSystem *fullSystem = new FullSystem(linearizeOperation, imuCalibration, imuSettings, &dsoSettings);
   fullSystem->setGammaFunction(reader->getPhotometricGamma());
 
   if (viewer != 0)
@@ -222,7 +223,7 @@ void run(DatasetReader *reader, IOWrap::PangolinDSOViewer *viewer)
     }
 
     std::unique_ptr<dmvio::IMUData> imuData;
-    if (setting_useIMU)
+    if (dsoSettings.useIMU)
     {
       imuData = std::make_unique<dmvio::IMUData>(reader->getIMUData(i));
     }
@@ -235,7 +236,7 @@ void run(DatasetReader *reader, IOWrap::PangolinDSOViewer *viewer)
         imuDataSkipped = false;
       }
       fullSystem->addActiveFrame(img, i, imuData.get(), (gtDataThere && found) ? &data : 0);
-      if (gtDataThere && found && !disableAllDisplay)
+      if (gtDataThere && found && !dsoSettings.disableAllDisplay)
       {
         viewer->addGTCamPose(data.pose);
       }
@@ -248,9 +249,9 @@ void run(DatasetReader *reader, IOWrap::PangolinDSOViewer *viewer)
 
     delete img;
 
-    if (fullSystem->initFailed || setting_fullResetRequested)
+    if (fullSystem->initFailed || dsoSettings.fullResetRequested)
     {
-      if (ii < 250 || setting_fullResetRequested)
+      if (ii < 250 || dsoSettings.fullResetRequested)
       {
         printf("RESETTING!\n");
         std::vector<IOWrap::Output3DWrapper *> wraps = fullSystem->outputWrapper;
@@ -258,11 +259,11 @@ void run(DatasetReader *reader, IOWrap::PangolinDSOViewer *viewer)
         for (IOWrap::Output3DWrapper *ow : wraps)
           ow->reset();
 
-        fullSystem = new FullSystem(linearizeOperation, imuCalibration, imuSettings);
+        fullSystem = new FullSystem(linearizeOperation, imuCalibration, imuSettings, &dsoSettings);
         fullSystem->setGammaFunction(reader->getPhotometricGamma());
         fullSystem->outputWrapper = wraps;
 
-        setting_fullResetRequested = false;
+        dsoSettings.fullResetRequested = false;
       }
     }
 
@@ -307,7 +308,7 @@ void run(DatasetReader *reader, IOWrap::PangolinDSOViewer *viewer)
          1000 / (MilliSecondsTakenSingle / numSecondsProcessed),
          1000 / (MilliSecondsTakenMT / numSecondsProcessed));
   fullSystem->printFrameLifetimes();
-  if (setting_logStuff)
+  if (dsoSettings.logStuff)
   {
     std::ofstream tmlog;
     tmlog.open("logs/time.txt", std::ios::trunc | std::ios::out);
@@ -368,7 +369,7 @@ int main(int argc, char **argv)
 
   if (mainSettings.imuCalibFile != "")
   {
-    imuCalibration.loadFromFile(mainSettings.imuCalibFile);
+    imuCalibration.loadFromFile(mainSettings.imuCalibFile, dsoSettings.multiCameraIndex);
   }
 
   // Print settings to commandline and file.
@@ -383,16 +384,15 @@ int main(int argc, char **argv)
   // hook crtl+C.
   boost::thread exThread = boost::thread(exitThread);
 
-  //TODO changed this for testing
-  // ImageFolderReader *reader = new ImageFolderReader(source, mainSettings.calib, mainSettings.gammaCalib, mainSettings.vignette, use16Bit, tsFile);
-  DaiFolderReader *reader = new DaiFolderReader(source, mainSettings.calib, use16Bit);
+  // TODO changed this for testing
+  //  ImageFolderReader *reader = new ImageFolderReader(source, mainSettings.calib, mainSettings.gammaCalib, mainSettings.vignette, use16Bit, tsFile);
+  DaiFolderReader *reader = new DaiFolderReader(&dsoSettings, source, mainSettings.calib, use16Bit);
   reader->loadIMUData(imuFile);
   reader->setGlobalCalibration();
 
-  if (!disableAllDisplay)
+  if (!dsoSettings.disableAllDisplay)
   {
-    IOWrap::PangolinDSOViewer *viewer = new IOWrap::PangolinDSOViewer(wG[0], hG[0], false, settingsUtil,
-                                                                      nullptr);
+    IOWrap::PangolinDSOViewer *viewer = new IOWrap::PangolinDSOViewer(&dsoSettings, false, settingsUtil, nullptr);
 
     boost::thread runThread = boost::thread(boost::bind(run, reader, viewer));
 

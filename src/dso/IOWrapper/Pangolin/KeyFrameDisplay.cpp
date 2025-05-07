@@ -41,7 +41,7 @@ namespace dso
   namespace IOWrap
   {
 
-    KeyFrameDisplay::KeyFrameDisplay()
+    KeyFrameDisplay::KeyFrameDisplay(Settings *settings) : settings(settings)
     {
       originalInputSparse = 0;
       numSparseBufferSize = 0;
@@ -69,8 +69,8 @@ namespace dso
       fy = HCalib->fyl();
       cx = HCalib->cxl();
       cy = HCalib->cyl();
-      width = wG[0];
-      height = hG[0];
+      width = settings->calibG.wG[0];
+      height = settings->calibG.hG[0];
       fxi = 1 / fx;
       fyi = 1 / fy;
       cxi = -cx / fx;
@@ -86,8 +86,8 @@ namespace dso
       fy = HCalib->fyl();
       cx = HCalib->cxl();
       cy = HCalib->cyl();
-      width = wG[0];
-      height = hG[0];
+      width = settings->calibG.wG[0];
+      height = settings->calibG.hG[0];
       fxi = 1 / fx;
       fyi = 1 / fy;
       cxi = -cx / fx;

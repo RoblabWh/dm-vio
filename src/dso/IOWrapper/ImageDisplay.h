@@ -25,6 +25,7 @@
 #include <vector>
 #include "util/NumType.h"
 #include "util/MinimalImage.h"
+#include "util/settings.h"
 
 namespace dso
 {
@@ -32,19 +33,19 @@ namespace dso
   namespace IOWrap
   {
 
-    void displayImage(const char *windowName, const MinimalImageB *img, bool autoSize = false);
-    void displayImage(const char *windowName, const MinimalImageB3 *img, bool autoSize = false);
-    void displayImage(const char *windowName, const MinimalImageF *img, bool autoSize = false);
-    void displayImage(const char *windowName, const MinimalImageF3 *img, bool autoSize = false);
-    void displayImage(const char *windowName, const MinimalImageB16 *img, bool autoSize = false);
+    void displayImage(const char *windowName, const MinimalImageB *img, const Settings *settings, bool autoSize = false);
+    void displayImage(const char *windowName, const MinimalImageB3 *img, const Settings *settings, bool autoSize = false);
+    void displayImage(const char *windowName, const MinimalImageF *img, const Settings *settings, bool autoSize = false);
+    void displayImage(const char *windowName, const MinimalImageF3 *img, const Settings *settings, bool autoSize = false);
+    void displayImage(const char *windowName, const MinimalImageB16 *img, const Settings *settings, bool autoSize = false);
 
-    void displayImageStitch(const char *windowName, const std::vector<MinimalImageB *> images, int cc = 0, int rc = 0);
-    void displayImageStitch(const char *windowName, const std::vector<MinimalImageB3 *> images, int cc = 0, int rc = 0);
-    void displayImageStitch(const char *windowName, const std::vector<MinimalImageF *> images, int cc = 0, int rc = 0);
-    void displayImageStitch(const char *windowName, const std::vector<MinimalImageF3 *> images, int cc = 0, int rc = 0);
+    void displayImageStitch(const char *windowName, const std::vector<MinimalImageB *> images, const Settings *settings, int cc = 0, int rc = 0);
+    void displayImageStitch(const char *windowName, const std::vector<MinimalImageB3 *> images, const Settings *settings, int cc = 0, int rc = 0);
+    void displayImageStitch(const char *windowName, const std::vector<MinimalImageF *> images, const Settings *settings, int cc = 0, int rc = 0);
+    void displayImageStitch(const char *windowName, const std::vector<MinimalImageF3 *> images, const Settings *settings, int cc = 0, int rc = 0);
 
-    int waitKey(int milliseconds);
-    void closeAllWindows();
+    int waitKey(int milliseconds, const Settings *settings);
+    void closeAllWindows(const Settings *settings);
 
   }
 

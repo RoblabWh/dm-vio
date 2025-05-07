@@ -100,11 +100,11 @@ namespace dso
 
       char buf[100];
       snprintf(buf, 100, "IMG %d", idx);
-      IOWrap::displayImageStitch(buf, images);
+      IOWrap::displayImageStitch(buf, images, settings);
       idx++;
     }
 
-    IOWrap::waitKey(0);
+    IOWrap::waitKey(0, settings);
   }
 
   void FullSystem::debugPlot(std::string name)
@@ -310,8 +310,8 @@ namespace dso
         }
       }
     }
-    IOWrap::displayImageStitch(name.c_str(), images);
-    IOWrap::waitKey(5);
+    IOWrap::displayImageStitch(name.c_str(), images, settings);
+    IOWrap::waitKey(5, settings);
 
     for (unsigned int i = 0; i < images.size(); i++)
       delete images[i];

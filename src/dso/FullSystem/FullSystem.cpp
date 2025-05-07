@@ -1126,10 +1126,10 @@ namespace dso
       if (settings->goStepByStep && lastRefStopID != coarseTracker->refFrameID)
       {
         MinimalImageF3 img(settings->calibG.wG[0], settings->calibG.hG[0], fh->dI);
-        IOWrap::displayImage("frameToTrack", &img);
+        IOWrap::displayImage("frameToTrack", &img, settings);
         while (true)
         {
-          char k = IOWrap::waitKey(0);
+          char k = IOWrap::waitKey(0, settings);
           if (k == ' ')
             break;
             settings->handleKey(k);
@@ -1137,7 +1137,7 @@ namespace dso
         lastRefStopID = coarseTracker->refFrameID;
       }
       else
-      settings->handleKey(IOWrap::waitKey(1));
+      settings->handleKey(IOWrap::waitKey(1, settings));
 
       if (needKF)
       {

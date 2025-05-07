@@ -28,6 +28,7 @@
 #undef Success
 #include <Eigen/Core>
 #include "util/NumType.h"
+#include "util/settings.h"
 #include <pangolin/pangolin.h>
 
 #include <sstream>
@@ -67,7 +68,7 @@ namespace dso
 
     public:
       EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-      KeyFrameDisplay();
+      KeyFrameDisplay(Settings *settings);
       ~KeyFrameDisplay();
 
       // copies points from KF over to internal buffer,
@@ -116,6 +117,8 @@ namespace dso
       int numGLBufferGoodPoints;
       pangolin::GlBuffer vertexBuffer;
       pangolin::GlBuffer colorBuffer;
+
+      Settings *settings;
     };
 
   }

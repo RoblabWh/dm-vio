@@ -36,11 +36,11 @@ namespace dso
   namespace IOWrap
   {
 
-    PangolinDSOViewer::PangolinDSOViewer(int w, int h, bool startRunThread, std::shared_ptr<dmvio::SettingsUtil> settingsUtilPassed, std::shared_ptr<double> normalizeCamSize)
-        : HCalib(0), settingsUtil(std::move(settingsUtilPassed)), normalizeCamSize(normalizeCamSize)
+    PangolinDSOViewer::PangolinDSOViewer(Settings *settings, bool startRunThread, std::shared_ptr<dmvio::SettingsUtil> settingsUtilPassed, std::shared_ptr<double> normalizeCamSize)
+        : HCalib(0), normalizeCamSize(normalizeCamSize), settingsUtil(std::move(settingsUtilPassed)), settings(settings)
     {
-      this->w = w;
-      this->h = h;
+      this->w = settings->calibG.wG[0];
+      this->h = settings->calibG.hG[0];
       running = true;
 
       {
@@ -56,8 +56,8 @@ namespace dso
       }
 
       {
-        currentCam = new KeyFrameDisplay();
-        currentGTCam = new KeyFrameDisplay();
+        currentCam = new KeyFrameDisplay(settings);
+        currentGTCam = new KeyFrameDisplay(settings);
       }
 
       needReset = false;
@@ -140,11 +140,11 @@ namespace dso
 
       pangolin::Var<bool> settings_resetButton("ui.Reset", false, false);
 
-      pangolin::Var<int> settings_nPts("ui.activePoints", setting_desiredPointDensity, 50, 5000, false);
-      pangolin::Var<int> settings_nCandidates("ui.pointCandidates", setting_desiredImmatureDensity, 50, 5000, false);
-      pangolin::Var<int> settings_nMaxFrames("ui.maxFrames", setting_maxFrames, 4, 10, false);
-      pangolin::Var<double> settings_kfFrequency("ui.kfFrequency", setting_kfGlobalWeight, 0.1, 3, false);
-      pangolin::Var<double> settings_gradHistAdd("ui.minGradAdd", setting_minGradHistAdd, 0, 15, false);
+      pangolin::Var<int> settings_nPts("ui.activePoints", settings->desiredPointDensity, 50, 5000, false);
+      pangolin::Var<int> settings_nCandidates("ui.pointCandidates", settings->desiredImmatureDensity, 50, 5000, false);
+      pangolin::Var<int> settings_nMaxFrames("ui.maxFrames", settings->maxFrames, 4, 10, false);
+      pangolin::Var<double> settings_kfFrequency("ui.kfFrequency", settings->kfGlobalWeight, 0.1, 3, false);
+      pangolin::Var<double> settings_gradHistAdd("ui.minGradAdd", settings->minGradHistAdd, 0, 15, false);
 
       pangolin::Var<double> settings_trackFps("ui.Track fps", 0, 0, 0, false);
       pangolin::Var<double> settings_mapFps("ui.KF fps", 0, 0, 0, false);
@@ -165,7 +165,7 @@ namespace dso
         // Clear entire screen
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        if (setting_render_display3D)
+        if (settings->render_display3D)
         {
           double sizeFactor = 1.0;
 
@@ -258,21 +258,21 @@ namespace dso
           }
         }
 
-        if (setting_render_displayVideo)
+        if (settings->render_displayVideo)
         {
           d_video.Activate();
           glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
           texVideo.RenderToViewportFlipY();
         }
 
-        if (setting_render_displayDepth)
+        if (settings->render_displayDepth)
         {
           d_kfDepth.Activate();
           glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
           texKFDepth.RenderToViewportFlipY();
         }
 
-        if (setting_render_displayResidual)
+        if (settings->render_displayResidual)
         {
           d_residual.Activate();
           glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
@@ -289,25 +289,25 @@ namespace dso
         this->settings_showTrajectory = settings_showTrajectory.Get();
         this->settings_showFullTrajectory = settings_showFullTrajectory.Get();
 
-        setting_render_display3D = settings_show3D.Get();
-        setting_render_displayDepth = settings_showLiveDepth.Get();
-        setting_render_displayVideo = settings_showLiveVideo.Get();
-        setting_render_displayResidual = settings_showLiveResidual.Get();
+        settings->render_display3D = settings_show3D.Get();
+        settings->render_displayDepth = settings_showLiveDepth.Get();
+        settings->render_displayVideo = settings_showLiveVideo.Get();
+        settings->render_displayResidual = settings_showLiveResidual.Get();
 
-        setting_render_renderWindowFrames = settings_showFramesWindow.Get();
-        setting_render_plotTrackingFull = settings_showFullTracking.Get();
-        setting_render_displayCoarseTrackingFull = settings_showCoarseTracking.Get();
+        settings->render_renderWindowFrames = settings_showFramesWindow.Get();
+        settings->render_plotTrackingFull = settings_showFullTracking.Get();
+        settings->render_displayCoarseTrackingFull = settings_showCoarseTracking.Get();
 
         this->settings_absVarTH = settings_absVarTH.Get();
         this->settings_scaledVarTH = settings_scaledVarTH.Get();
         this->settings_minRelBS = settings_minRelBS.Get();
         this->settings_sparsity = settings_sparsity.Get();
 
-        setting_desiredPointDensity = settings_nPts.Get();
-        setting_desiredImmatureDensity = settings_nCandidates.Get();
-        setting_maxFrames = settings_nMaxFrames.Get();
-        setting_kfGlobalWeight = settings_kfFrequency.Get();
-        setting_minGradHistAdd = settings_gradHistAdd.Get();
+        settings->desiredPointDensity = settings_nPts.Get();
+        settings->desiredImmatureDensity = settings_nCandidates.Get();
+        settings->maxFrames = settings_nMaxFrames.Get();
+        settings->kfGlobalWeight = settings_kfFrequency.Get();
+        settings->minGradHistAdd = settings_gradHistAdd.Get();
 
         if (settingsUtil)
         {
@@ -318,7 +318,7 @@ namespace dso
         {
           printf("RESET!\n");
           settings_resetButton.Reset();
-          setting_fullResetRequested = true;
+          settings->fullResetRequested = true;
         }
 
         // Swap frames and Process Events
@@ -460,9 +460,9 @@ namespace dso
 
     void PangolinDSOViewer::publishGraph(const std::map<uint64_t, Eigen::Vector2i, std::less<uint64_t>, Eigen::aligned_allocator<std::pair<const uint64_t, Eigen::Vector2i>>> &connectivity)
     {
-      if (!setting_render_display3D)
+      if (!settings->render_display3D)
         return;
-      if (disableAllDisplay)
+      if (settings->disableAllDisplay)
         return;
 
       model3DMutex.lock();
@@ -509,9 +509,9 @@ namespace dso
         bool final,
         CalibHessian *HCalib)
     {
-      if (!setting_render_display3D)
+      if (!settings->render_display3D)
         return;
-      if (disableAllDisplay)
+      if (settings->disableAllDisplay)
         return;
 
       boost::unique_lock<boost::mutex> lk(model3DMutex);
@@ -519,7 +519,7 @@ namespace dso
       {
         if (keyframesByKFID.find(fh->frameID) == keyframesByKFID.end())
         {
-          KeyFrameDisplay *kfd = new KeyFrameDisplay();
+          KeyFrameDisplay *kfd = new KeyFrameDisplay(settings);
           keyframesByKFID[fh->frameID] = kfd;
           keyframes.push_back(kfd);
         }
@@ -530,9 +530,9 @@ namespace dso
     void PangolinDSOViewer::publishCamPose(FrameShell *frame,
                                            CalibHessian *HCalib)
     {
-      if (!setting_render_display3D)
+      if (!settings->render_display3D)
         return;
-      if (disableAllDisplay)
+      if (settings->disableAllDisplay)
         return;
 
       boost::unique_lock<boost::mutex> lk(model3DMutex);
@@ -543,7 +543,7 @@ namespace dso
         lastNTrackingMs.pop_front();
       last_track = time_now;
 
-      if (!setting_render_display3D)
+      if (!settings->render_display3D)
         return;
 
       this->HCalib = HCalib;
@@ -554,9 +554,9 @@ namespace dso
 
     void PangolinDSOViewer::pushLiveFrame(FrameHessian *image)
     {
-      if (!setting_render_displayVideo)
+      if (!settings->render_displayVideo)
         return;
-      if (disableAllDisplay)
+      if (settings->disableAllDisplay)
         return;
 
       boost::unique_lock<boost::mutex> lk(openImagesMutex);
@@ -572,15 +572,15 @@ namespace dso
 
     bool PangolinDSOViewer::needPushDepthImage()
     {
-      return setting_render_displayDepth;
+      return settings->render_displayDepth;
     }
     void PangolinDSOViewer::pushDepthImage(MinimalImageB3 *image, FrameHessian *KF)
     {
       (void)KF;
 
-      if (!setting_render_displayDepth)
+      if (!settings->render_displayDepth)
         return;
-      if (disableAllDisplay)
+      if (settings->disableAllDisplay)
         return;
 
       boost::unique_lock<boost::mutex> lk(openImagesMutex);
@@ -598,9 +598,9 @@ namespace dso
 
     void PangolinDSOViewer::publishTransformDSOToIMU(const dmvio::TransformDSOToIMU &transformDSOToIMUPassed)
     {
-      if (!setting_render_display3D)
+      if (!settings->render_display3D)
         return;
-      if (disableAllDisplay)
+      if (settings->disableAllDisplay)
         return;
 
       boost::unique_lock<boost::mutex> lk(model3DMutex);
@@ -618,7 +618,7 @@ namespace dso
     {
       boost::unique_lock<boost::mutex> lk(model3DMutex);
 
-      if (!setting_render_display3D || !HCalib)
+      if (!settings->render_display3D || !HCalib)
         return;
 
       std::cout << "GTPose: " << gtPose.translation().transpose() << std::endl;
@@ -639,7 +639,7 @@ namespace dso
     {
       if (!gtCamPoseSet || !transformDSOToIMU)
         return;
-      if (!setting_render_display3D || !HCalib)
+      if (!settings->render_display3D || !HCalib)
         return;
 
       // The visualizer shows cam to world in dso scale. The groundtruth pose is imu to world in metric scale.

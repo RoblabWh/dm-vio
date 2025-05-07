@@ -299,7 +299,7 @@ namespace dso
           c = 255;
         img.at(i) = Vec3b(c, c, c);
       }
-      IOWrap::displayImage("Selector Image", &img);
+      IOWrap::displayImage("Selector Image", &img, settings);
 
       for (int y = 0; y < h; y++)
         for (int x = 0; x < w; x++)
@@ -312,7 +312,7 @@ namespace dso
           else if (map_out[i] == 4)
             img.setPixelCirc(x, y, Vec3b(0, 0, 255));
         }
-      IOWrap::displayImage("Selector Pixels", &img);
+      IOWrap::displayImage("Selector Pixels", &img, settings);
     }
 
     return numHaveSub;

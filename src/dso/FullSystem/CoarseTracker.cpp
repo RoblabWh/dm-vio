@@ -522,8 +522,8 @@ namespace dso
 
     if (debugPlot)
     {
-      IOWrap::displayImage("RES", resImage, false);
-      IOWrap::waitKey(0);
+      IOWrap::displayImage("RES", resImage, settings, false);
+      IOWrap::waitKey(0, settings);
       delete resImage;
     }
 

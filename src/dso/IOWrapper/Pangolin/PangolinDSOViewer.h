@@ -30,6 +30,7 @@
 #include "IOWrapper/Output3DWrapper.h"
 #include <map>
 #include <deque>
+#include "util/settings.h"
 #include "util/SettingsUtil.h"
 #include "FollowCamMode.h"
 
@@ -61,7 +62,7 @@ namespace dso
     {
     public:
       EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-      PangolinDSOViewer(int w, int h, bool startRunThread = true, std::shared_ptr<dmvio::SettingsUtil> settingsUtil = nullptr, std::shared_ptr<double> normalizeCamSize = nullptr);
+      PangolinDSOViewer(Settings *settings, bool startRunThread = true, std::shared_ptr<dmvio::SettingsUtil> settingsUtil = nullptr, std::shared_ptr<double> normalizeCamSize = nullptr);
       virtual ~PangolinDSOViewer();
 
       void run();
@@ -150,6 +151,7 @@ namespace dso
       FollowCamMode followCam;
 
       std::shared_ptr<dmvio::SettingsUtil> settingsUtil;
+      Settings *settings;
     };
 
   }

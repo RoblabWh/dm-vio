@@ -83,6 +83,8 @@ class ImageFolderReader : public DatasetReader
 public:
   ImageFolderReader(Settings *settings, std::string path, std::string calibFile, std::string gammaFile, std::string vignetteFile, bool use16BitPassed, std::string tsFile = "")
   {
+    this->settings = settings;
+
     this->path = path;
     this->calibfile = calibFile;
     this->tsFile = tsFile;
@@ -171,7 +173,7 @@ public:
     int w_out, h_out;
     Eigen::Matrix3f K;
     getCalibMono(K, w_out, h_out);
-    setGlobalCalib(w_out, h_out, K);
+    settings->calibG = GlobalCalib(w_out, h_out, K, settings->pyrLevelsUsed);
   }
 
   int getNumImages()

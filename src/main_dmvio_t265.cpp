@@ -67,7 +67,8 @@ int start = 2;
 using namespace dso;
 
 dmvio::FrameContainer frameContainer;
-dmvio::MainSettings mainSettings;
+dso::Settings dsoSettings;
+dmvio::MainSettings mainSettings(&dsoSettings);
 dmvio::IMUCalibration imuCalibration;
 dmvio::IMUSettings imuSettings;
 dmvio::FrameSkippingSettings frameSkippingSettings;
@@ -95,9 +96,9 @@ void exitThread()
 void run(IOWrap::PangolinDSOViewer *viewer, Undistort *undistorter)
 {
   bool linearizeOperation = false;
-  auto fullSystem = std::make_unique<FullSystem>(linearizeOperation, imuCalibration, imuSettings);
+  auto fullSystem = std::make_unique<FullSystem>(linearizeOperation, imuCalibration, imuSettings, &dsoSettings);
 
-  if (setting_photometricCalibration > 0 && undistorter->photometricUndist == nullptr)
+  if (dsoSettings.photometricCalibration > 0 && undistorter->photometricUndist == nullptr)
   {
     printf("ERROR: dont't have photometric calibation. Need to use commandline options mode=1 or mode=2 ");
     exit(1);
@@ -135,9 +136,9 @@ void run(IOWrap::PangolinDSOViewer *viewer, Undistort *undistorter)
 
     fullSystem->addActiveFrame(pair.first.get(), ii, &(pair.second), nullptr);
 
-    if (fullSystem->initFailed || setting_fullResetRequested)
+    if (fullSystem->initFailed || dsoSettings.fullResetRequested)
     {
-      if (ii - lastResetIndex < 250 || setting_fullResetRequested)
+      if (ii - lastResetIndex < 250 || dsoSettings.fullResetRequested)
       {
         printf("RESETTING!\n");
         std::vector<IOWrap::Output3DWrapper *> wraps = fullSystem->outputWrapper;
@@ -145,14 +146,14 @@ void run(IOWrap::PangolinDSOViewer *viewer, Undistort *undistorter)
         for (IOWrap::Output3DWrapper *ow : wraps)
           ow->reset();
 
-        fullSystem = std::make_unique<FullSystem>(linearizeOperation, imuCalibration, imuSettings);
+        fullSystem = std::make_unique<FullSystem>(linearizeOperation, imuCalibration, imuSettings, &dsoSettings);
         if (undistorter->photometricUndist != nullptr)
         {
           fullSystem->setGammaFunction(undistorter->photometricUndist->getG());
         }
         fullSystem->outputWrapper = wraps;
 
-        setting_fullResetRequested = false;
+        dsoSettings.fullResetRequested = false;
         lastResetIndex = ii;
       }
     }
@@ -261,17 +262,18 @@ int main(int argc, char **argv)
   }
 
   std::unique_ptr<Undistort> undistorter(
-      Undistort::makeFromDSOCalibration(usedCalib, mainSettings.gammaCalib, mainSettings.vignette));
+      Undistort::makeFromDSOCalibration(&dsoSettings, usedCalib, mainSettings.gammaCalib, mainSettings.vignette));
   realsense.setUndistorter(undistorter.get());
 
-  setGlobalCalib(
+  dsoSettings.calibG = GlobalCalib(
       (int)undistorter->getSize()[0],
       (int)undistorter->getSize()[1],
-      undistorter->getK().cast<float>());
+      undistorter->getK().cast<float>(),
+      dsoSettings.pyrLevelsUsed);
 
   if (mainSettings.imuCalibFile != "")
   {
-    imuCalibration.loadFromFile(mainSettings.imuCalibFile);
+    imuCalibration.loadFromFile(mainSettings.imuCalibFile, dsoSettings.multiCameraIndex);
   }
   else
   {
@@ -279,9 +281,9 @@ int main(int argc, char **argv)
     imuCalibration = *(realsense.imuCalibration);
   }
 
-  if (!disableAllDisplay)
+  if (!dsoSettings.disableAllDisplay)
   {
-    IOWrap::PangolinDSOViewer *viewer = new IOWrap::PangolinDSOViewer(wG[0], hG[0], false, settingsUtil,
+    IOWrap::PangolinDSOViewer *viewer = new IOWrap::PangolinDSOViewer(&dsoSettings, false, settingsUtil,
                                                                       normalizeCamSize);
 
     boost::thread runThread = boost::thread(boost::bind(run, viewer, undistorter.get()));

@@ -28,19 +28,19 @@ namespace dso
 
   namespace IOWrap
   {
-    void displayImage(const char *windowName, const MinimalImageB *img, bool autoSize) {};
-    void displayImage(const char *windowName, const MinimalImageB3 *img, bool autoSize) {};
-    void displayImage(const char *windowName, const MinimalImageF *img, bool autoSize) {};
-    void displayImage(const char *windowName, const MinimalImageF3 *img, bool autoSize) {};
-    void displayImage(const char *windowName, const MinimalImageB16 *img, bool autoSize) {};
+    void displayImage(const char *windowName, const MinimalImageB *img, const Settings *settings, bool autoSize) {};
+    void displayImage(const char *windowName, const MinimalImageB3 *img, const Settings *settings, bool autoSize) {};
+    void displayImage(const char *windowName, const MinimalImageF *img, const Settings *settings, bool autoSize) {};
+    void displayImage(const char *windowName, const MinimalImageF3 *img, const Settings *settings, bool autoSize) {};
+    void displayImage(const char *windowName, const MinimalImageB16 *img, const Settings *settings, bool autoSize) {};
 
-    void displayImageStitch(const char *windowName, const std::vector<MinimalImageB *> images, int cc, int rc) {};
-    void displayImageStitch(const char *windowName, const std::vector<MinimalImageB3 *> images, int cc, int rc) {};
-    void displayImageStitch(const char *windowName, const std::vector<MinimalImageF *> images, int cc, int rc) {};
-    void displayImageStitch(const char *windowName, const std::vector<MinimalImageF3 *> images, int cc, int rc) {};
+    void displayImageStitch(const char *windowName, const std::vector<MinimalImageB *> images, const Settings *settings, int cc, int rc) {};
+    void displayImageStitch(const char *windowName, const std::vector<MinimalImageB3 *> images, const Settings *settings, int cc, int rc) {};
+    void displayImageStitch(const char *windowName, const std::vector<MinimalImageF *> images, const Settings *settings, int cc, int rc) {};
+    void displayImageStitch(const char *windowName, const std::vector<MinimalImageF3 *> images, const Settings *settings, int cc, int rc) {};
 
-    int waitKey(int milliseconds) { return 0; };
-    void closeAllWindows() {};
+    int waitKey(int milliseconds, const Settings *settings) { return 0; };
+    void closeAllWindows(const Settings *settings) {};
   }
 
 }

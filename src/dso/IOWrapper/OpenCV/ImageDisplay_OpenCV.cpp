@@ -41,9 +41,9 @@ namespace dso
     std::unordered_set<std::string> openWindows;
     boost::mutex openCVdisplayMutex;
 
-    void displayImage(const char *windowName, const cv::Mat &image, bool autoSize)
+    void displayImage(const char *windowName, const cv::Mat &image, const Settings *settings, bool autoSize)
     {
-      if (disableAllDisplay)
+      if (settings->disableAllDisplay)
         return;
 
       boost::unique_lock<boost::mutex> lock(openCVdisplayMutex);
@@ -59,9 +59,9 @@ namespace dso
       cv::imshow(windowName, image);
     }
 
-    void displayImageStitch(const char *windowName, const std::vector<cv::Mat *> images, int cc, int rc)
+    void displayImageStitch(const char *windowName, const std::vector<cv::Mat *> images, const Settings *settings, int cc, int rc)
     {
-      if (disableAllDisplay)
+      if (settings->disableAllDisplay)
         return;
       if (images.size() == 0)
         return;
@@ -70,7 +70,7 @@ namespace dso
       int w = images[0]->cols;
       int h = images[0]->rows;
 
-      int num = std::max((int)setting_maxFrames, (int)images.size());
+      int num = std::max((int)settings->maxFrames, (int)images.size());
 
       // get optimal dimensions.
       int bestCC = 0;
@@ -107,79 +107,79 @@ namespace dso
         cv::Mat roi = stitch(cv::Rect(c * w, r * h, w, h));
         images[i]->copyTo(roi);
       }
-      displayImage(windowName, stitch, false);
+      displayImage(windowName, stitch, settings, false);
     }
 
-    void displayImage(const char *windowName, const MinimalImageB *img, bool autoSize)
+    void displayImage(const char *windowName, const MinimalImageB *img, const Settings *settings, bool autoSize)
     {
-      displayImage(windowName, cv::Mat(img->h, img->w, CV_8U, img->data), autoSize);
+      displayImage(windowName, cv::Mat(img->h, img->w, CV_8U, img->data), settings, autoSize);
     }
-    void displayImage(const char *windowName, const MinimalImageB3 *img, bool autoSize)
+    void displayImage(const char *windowName, const MinimalImageB3 *img, const Settings *settings, bool autoSize)
     {
-      displayImage(windowName, cv::Mat(img->h, img->w, CV_8UC3, img->data), autoSize);
+      displayImage(windowName, cv::Mat(img->h, img->w, CV_8UC3, img->data), settings, autoSize);
     }
-    void displayImage(const char *windowName, const MinimalImageF *img, bool autoSize)
+    void displayImage(const char *windowName, const MinimalImageF *img, const Settings *settings, bool autoSize)
     {
-      displayImage(windowName, cv::Mat(img->h, img->w, CV_32F, img->data) * (1 / 254.0f), autoSize);
+      displayImage(windowName, cv::Mat(img->h, img->w, CV_32F, img->data) * (1 / 254.0f), settings, autoSize);
     }
-    void displayImage(const char *windowName, const MinimalImageF3 *img, bool autoSize)
+    void displayImage(const char *windowName, const MinimalImageF3 *img, const Settings *settings, bool autoSize)
     {
-      displayImage(windowName, cv::Mat(img->h, img->w, CV_32FC3, img->data) * (1 / 254.0f), autoSize);
+      displayImage(windowName, cv::Mat(img->h, img->w, CV_32FC3, img->data) * (1 / 254.0f), settings, autoSize);
     }
-    void displayImage(const char *windowName, const MinimalImageB16 *img, bool autoSize)
+    void displayImage(const char *windowName, const MinimalImageB16 *img, const Settings *settings, bool autoSize)
     {
-      displayImage(windowName, cv::Mat(img->h, img->w, CV_16U, img->data), autoSize);
+      displayImage(windowName, cv::Mat(img->h, img->w, CV_16U, img->data), settings, autoSize);
     }
 
-    void displayImageStitch(const char *windowName, const std::vector<MinimalImageB *> images, int cc, int rc)
+    void displayImageStitch(const char *windowName, const std::vector<MinimalImageB *> images, const Settings *settings, int cc, int rc)
     {
       std::vector<cv::Mat *> imagesCV;
       for (size_t i = 0; i < images.size(); i++)
         imagesCV.push_back(new cv::Mat(images[i]->h, images[i]->w, CV_8U, images[i]->data));
-      displayImageStitch(windowName, imagesCV, cc, rc);
+      displayImageStitch(windowName, imagesCV, settings, cc, rc);
       for (size_t i = 0; i < images.size(); i++)
         delete imagesCV[i];
     }
-    void displayImageStitch(const char *windowName, const std::vector<MinimalImageB3 *> images, int cc, int rc)
+    void displayImageStitch(const char *windowName, const std::vector<MinimalImageB3 *> images, const Settings *settings, int cc, int rc)
     {
       std::vector<cv::Mat *> imagesCV;
       for (size_t i = 0; i < images.size(); i++)
         imagesCV.push_back(new cv::Mat(images[i]->h, images[i]->w, CV_8UC3, images[i]->data));
-      displayImageStitch(windowName, imagesCV, cc, rc);
+      displayImageStitch(windowName, imagesCV, settings, cc, rc);
       for (size_t i = 0; i < images.size(); i++)
         delete imagesCV[i];
     }
-    void displayImageStitch(const char *windowName, const std::vector<MinimalImageF *> images, int cc, int rc)
+    void displayImageStitch(const char *windowName, const std::vector<MinimalImageF *> images, const Settings *settings, int cc, int rc)
     {
       std::vector<cv::Mat *> imagesCV;
       for (size_t i = 0; i < images.size(); i++)
         imagesCV.push_back(new cv::Mat(images[i]->h, images[i]->w, CV_32F, images[i]->data));
-      displayImageStitch(windowName, imagesCV, cc, rc);
+      displayImageStitch(windowName, imagesCV, settings, cc, rc);
       for (size_t i = 0; i < images.size(); i++)
         delete imagesCV[i];
     }
-    void displayImageStitch(const char *windowName, const std::vector<MinimalImageF3 *> images, int cc, int rc)
+    void displayImageStitch(const char *windowName, const std::vector<MinimalImageF3 *> images, const Settings *settings, int cc, int rc)
     {
       std::vector<cv::Mat *> imagesCV;
       for (size_t i = 0; i < images.size(); i++)
         imagesCV.push_back(new cv::Mat(images[i]->h, images[i]->w, CV_32FC3, images[i]->data));
-      displayImageStitch(windowName, imagesCV, cc, rc);
+      displayImageStitch(windowName, imagesCV, settings, cc, rc);
       for (size_t i = 0; i < images.size(); i++)
         delete imagesCV[i];
     }
 
-    int waitKey(int milliseconds)
+    int waitKey(int milliseconds, const Settings *settings)
     {
-      if (disableAllDisplay)
+      if (settings->disableAllDisplay)
         return 0;
 
       boost::unique_lock<boost::mutex> lock(openCVdisplayMutex);
       return cv::waitKey(milliseconds);
     }
 
-    void closeAllWindows()
+    void closeAllWindows(const Settings *settings)
     {
-      if (disableAllDisplay)
+      if (settings->disableAllDisplay)
         return;
       boost::unique_lock<boost::mutex> lock(openCVdisplayMutex);
       cv::destroyAllWindows();
