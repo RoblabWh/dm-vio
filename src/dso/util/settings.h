@@ -219,6 +219,9 @@ namespace dso
 
     int sparsityFactor = 5; // not actually a setting, only some legacy stuff for coarse initializer.
 
+    float wTarget = 0;
+    float hTarget = 0;
+
     GlobalCalib calibG;
 
     void handleKey(char k)

@@ -195,7 +195,8 @@ namespace dso
       if (G[i + 1] <= G[i])
       {
         printf("PhotometricUndistorter: G invalid! it has to be strictly increasing, but it isnt!\n");
-        return;
+        // Treat this as a warning rather than an error, as it has not caused issues in the past.
+        // return;
       }
     }
 
@@ -461,7 +462,7 @@ namespace dso
   {
     if (image_raw->w != wOrg || image_raw->h != hOrg)
     {
-      printf("Undistort::undistort: wrong image size (%d %d instead of %d %d) \n", image_raw->w, image_raw->h, w, h);
+      printf("Undistort::undistort: wrong image size (%d %d instead of %d %d) \n", image_raw->w, image_raw->h, wOrg, hOrg);
       exit(1);
     }
 
@@ -814,10 +815,35 @@ namespace dso
       wOrg = res[0];
       hOrg = res[1];
 
-      // TODO Hardcode crop to 512x512 (other is not supported anyways)
       outputCalibration[0] = -1;
+#ifdef DEBUG
+      // Hardcode crop to 512x512 (other resolutions are not supported during debugging)
       w = 512;
       h = 512;
+#else
+      if (settings->wTarget == 0)
+        w = wOrg;
+      else if (settings->wTarget > 0 && settings->wTarget <= 1)
+        w = wOrg * settings->wTarget;
+      else if (settings->wTarget > 1)
+        w = settings->wTarget;
+      if (settings->hTarget == 0)
+        h = hOrg;
+      else if (settings->hTarget > 0 && settings->hTarget <= 1)
+        h = hOrg * settings->hTarget;
+      else if (settings->hTarget > 0)
+        h = settings->hTarget;
+
+      if (settings->wTarget < 0 && settings->hTarget >= 0)
+        w = h * (1.0 / hOrg) * wOrg;
+      else if (settings->hTarget < 0 && settings->wTarget >= 0)
+        h = w * (1.0 / wOrg) * hOrg;
+      else if (settings->wTarget < 0 && settings->hTarget < 0)
+      {
+        printf("Invalid target size: %f %f\n", settings->wTarget, settings->hTarget);
+        exit(1);
+      }
+#endif
     }
     else
     {

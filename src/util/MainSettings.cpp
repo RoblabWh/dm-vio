@@ -189,6 +189,8 @@ void MainSettings::registerArgs(SettingsUtil &set)
   set.registerArg("preload", preload);
 
   set.registerArg("multiCameraIndex", settings->multiCameraIndex);
+  set.registerArg("wTarget", settings->wTarget);
+  set.registerArg("hTarget", settings->hTarget);
 
   // We don't register preset and mode as they will be handled in parseArgument.
 
