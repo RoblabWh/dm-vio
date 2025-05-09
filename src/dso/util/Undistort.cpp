@@ -200,8 +200,8 @@ namespace dso
       }
     }
 
-    float min = G[0];
-    float max = G[GDepth - 1];
+    float min = *std::min_element(G, G+GDepth);
+    float max = *std::max_element(G, G+GDepth);
     for (int i = 0; i < GDepth; i++)
       G[i] = 255.0f * (G[i] - min) / (max - min); // make it to 0..255 => 0..255.
 
