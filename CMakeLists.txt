@@ -2,10 +2,8 @@ cmake_minimum_required(VERSION 3.5)
 project(dmvio)
 
 IF(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE RelWithDebInfo)
+  set(CMAKE_BUILD_TYPE Release)
 ENDIF()
-
-set(BUILD_TYPE RelWithDebInfo)
 
 set(EXECUTABLE_OUTPUT_PATH bin)
 set(LIBRARY_OUTPUT_PATH lib)
@@ -58,6 +56,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 if(MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
 endif(MSVC)
+
+option(DMVIO_MARCH_NATIVE "Use -march=native (HAS to match GTSAM setting)" ON)
+if (DMVIO_MARCH_NATIVE)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+endif()
 
 set(DSO_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src/dso)
 

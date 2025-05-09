@@ -57,9 +57,9 @@ protected:
     // scale is 2
     // Between factor in IMU scale:
     // between P0-P1 and P1-P2: (1, 0, 0)
-    Pose3 pose0(gtsam::Rot3::identity(), gtsam::Point3(0.0, 0.0, 0.0));
-    Pose3 pose1(gtsam::Rot3::identity(), gtsam::Point3(2.0, 0.0, 0.0));
-    Pose3 pose2(gtsam::Rot3::identity(), gtsam::Point3(4.0, 0.0, 0.0));
+    Pose3 pose0(gtsam::Rot3::Identity(), gtsam::Point3(0.0, 0.0, 0.0));
+    Pose3 pose1(gtsam::Rot3::Identity(), gtsam::Point3(2.0, 0.0, 0.0));
+    Pose3 pose2(gtsam::Rot3::Identity(), gtsam::Point3(4.0, 0.0, 0.0));
 
     // We use the inverse, because TransformDSOToIMUNew also converts from worldToCam to camToWorld.
     pose0 = pose0.inverse();
@@ -78,9 +78,9 @@ protected:
     values.insert(P(2), Pose3{});
 
     between01.reset(new BetweenFactor<Pose3>(P(0), P(1),
-                                             gtsam::Pose3(gtsam::Rot3::identity(), gtsam::Point3(1.0, 0.0, 0.0)), betweenModel));
+                                             gtsam::Pose3(gtsam::Rot3::Identity(), gtsam::Point3(1.0, 0.0, 0.0)), betweenModel));
     between12.reset(new BetweenFactor<Pose3>(P(1), P(2),
-                                             gtsam::Pose3(gtsam::Rot3::identity(), gtsam::Point3(1.0, 0.0, 0.0)), betweenModel));
+                                             gtsam::Pose3(gtsam::Rot3::Identity(), gtsam::Point3(1.0, 0.0, 0.0)), betweenModel));
   }
 };
 
@@ -101,7 +101,7 @@ TEST_P(SimpleGraphTestsWithParams, WithTransformDSOToIMUNew)
 {
   PoseTransformationFactor::ConversionType conversionType = GetParam();
   std::shared_ptr<TransformDSOToIMU> transform(
-      new TransformDSOToIMU(gtsam::Pose3::identity(), std::make_shared<bool>(true),
+      new TransformDSOToIMU(gtsam::Pose3::Identity(), std::make_shared<bool>(true),
                             std::make_shared<bool>(false), std::make_shared<bool>(false), true, 0));
 
   graph.push_back(boost::make_shared<PoseTransformationFactor>(between01, *transform, conversionType));

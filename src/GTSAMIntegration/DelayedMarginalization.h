@@ -23,6 +23,7 @@
 #ifndef DMVIO_DELAYEDMARGINALIZATION_H
 #define DMVIO_DELAYEDMARGINALIZATION_H
 
+#include <deque>
 #include "GTSAMIntegration/BAGTSAMIntegration.h"
 #include "GTSAMIntegration/PoseTransformation.h"
 #include "GTSAMIntegration/FEJValues.h"
