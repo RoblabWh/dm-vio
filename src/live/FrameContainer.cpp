@@ -53,11 +53,10 @@ dmvio::FrameContainer::getImageAndIMUData(int maxSkipFrames)
     }
     useFrame = framesToSkip;
     numFramesAfter = frames.size() - useFrame - 1;
-    // if (!dso::setting_debugout_runquiet)
-    {
-      std::cout << "SKIPPING " << framesToSkip << " FRAMES!" << " frames remaining in queue: "
-                << numFramesAfter << std::endl;
-    }
+#ifndef NDEBUG
+    std::cout << "SKIPPING " << framesToSkip << " FRAMES!" << " frames remaining in queue: "
+              << numFramesAfter << std::endl;
+#endif
   }
 
   auto returnImg = std::move(frames[useFrame].img);

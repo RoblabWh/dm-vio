@@ -57,6 +57,8 @@
 #include "util/TimeMeasurement.h"
 #include "GTSAMIntegration/ExtUtils.h"
 
+#include "util/SophusEnsureHandler.h"
+
 using dmvio::GravityInitializer;
 
 namespace dso
@@ -70,7 +72,8 @@ namespace dso
   FullSystem::FullSystem(bool linearizeOperationPassed, const dmvio::IMUCalibration &imuCalibration,
                          dmvio::IMUSettings &imuSettings, Settings *settings)
       : linearizeOperation(linearizeOperationPassed), imuIntegration(&Hcalib, imuCalibration, imuSettings,
-                                                                     linearizeOperation, settings), settings(settings),
+                                                                     linearizeOperation, settings),
+        settings(settings),
         secondKeyframeDone(false), gravityInit(imuSettings.numMeasurementsGravityInit, imuCalibration),
         shellPoseMutex(FrameShell::shellPoseMutex), Hcalib(settings->calibG)
   {
@@ -869,221 +872,239 @@ namespace dso
 
     measureInit.end();
 
-    if (!initialized)
+    try
     {
-      // use initializer!
-      if (coarseInitializer->frameID < 0) // first frame set. fh is kept by coarseInitializer.
+      if (!initialized)
       {
-        // Only in this case no IMU-data is accumulated for the BA as this is the first frame.
-        dmvio::TimeMeasurement initMeasure("InitializerFirstFrame");
-        coarseInitializer->setFirst(&Hcalib, fh);
-        if (settings->useIMU)
+        // use initializer!
+        if (coarseInitializer->frameID < 0) // first frame set. fh is kept by coarseInitializer.
         {
-          gravityInit.addMeasure(*imuData, SE3());
-        }
-        for (IOWrap::Output3DWrapper *ow : outputWrapper)
-          ow->publishSystemStatus(dmvio::VISUAL_INIT);
-      }
-      else
-      {
-        dmvio::TimeMeasurement initMeasure("InitializerOtherFrames");
-        bool initDone = coarseInitializer->trackFrame(fh, outputWrapper);
-        if (settings->useIMU)
-        {
-          imuIntegration.addIMUDataToBA(*imuData);
-          SE3 imuToWorld = gravityInit.addMeasure(*imuData, SE3());
-          if (initDone)
+          // Only in this case no IMU-data is accumulated for the BA as this is the first frame.
+          dmvio::TimeMeasurement initMeasure("InitializerFirstFrame");
+          coarseInitializer->setFirst(&Hcalib, fh);
+          if (settings->useIMU)
           {
-            firstPose = imuToWorld * imuIntegration.TS_cam_imu.inverse();
+            gravityInit.addMeasure(*imuData, SE3());
           }
-        }
-        if (initDone) // if SNAPPED
-        {
-          initializeFromInitializer(fh);
-          if (settings->useIMU && linearizeOperation)
-          {
-            imuIntegration.setGTData(gtData, fh->shell->id);
-          }
-          lock.unlock();
-          initMeasure.end();
           for (IOWrap::Output3DWrapper *ow : outputWrapper)
-            ow->publishSystemStatus(dmvio::VISUAL_ONLY);
-          deliverTrackedFrame(fh, true);
+            ow->publishSystemStatus(dmvio::VISUAL_INIT);
         }
         else
         {
-          // if still initializing
-
-          // Maybe change first frame.
-          double timeBetweenFrames = fh->shell->timestamp - coarseInitializer->firstFrame->shell->timestamp;
-          std::cout << "InitTimeBetweenFrames: " << timeBetweenFrames << std::endl;
-          if (timeBetweenFrames > imuIntegration.getImuSettings().maxTimeBetweenInitFrames)
+          dmvio::TimeMeasurement initMeasure("InitializerOtherFrames");
+          bool initDone = coarseInitializer->trackFrame(fh, outputWrapper);
+          if (settings->useIMU)
           {
-            // Do full reset so that the next frame becomes the first initializer frame.
-            settings->fullResetRequested = true;
+            imuIntegration.addIMUDataToBA(*imuData);
+            SE3 imuToWorld = gravityInit.addMeasure(*imuData, SE3());
+            if (initDone)
+            {
+              firstPose = imuToWorld * imuIntegration.TS_cam_imu.inverse();
+            }
+          }
+          if (initDone) // if SNAPPED
+          {
+            initializeFromInitializer(fh);
+            if (settings->useIMU && linearizeOperation)
+            {
+              imuIntegration.setGTData(gtData, fh->shell->id);
+            }
+            lock.unlock();
+            initMeasure.end();
+            for (IOWrap::Output3DWrapper *ow : outputWrapper)
+              ow->publishSystemStatus(dmvio::VISUAL_ONLY);
+            deliverTrackedFrame(fh, true);
           }
           else
           {
-            fh->shell->poseValid = false;
-            delete fh;
+            // if still initializing
+
+            // Maybe change first frame.
+            double timeBetweenFrames = fh->shell->timestamp - coarseInitializer->firstFrame->shell->timestamp;
+            std::cout << "InitTimeBetweenFrames: " << timeBetweenFrames << std::endl;
+            if (timeBetweenFrames > imuIntegration.getImuSettings().maxTimeBetweenInitFrames)
+            {
+              // Do full reset so that the next frame becomes the first initializer frame.
+              settings->fullResetRequested = true;
+            }
+            else
+            {
+              fh->shell->poseValid = false;
+              delete fh;
+            }
           }
         }
+        return;
       }
-      return;
-    }
-    else // do front-end operation.
-    {
-      // --------------------------  Coarse tracking (after visual initializer succeeded). --------------------------
-      dmvio::TimeMeasurement coarseTrackingTime("fullCoarseTracking");
-      int lastFrameId = -1;
-
-      // =========================== SWAP tracking reference?. =========================
-      bool trackingRefChanged = false;
-      if (coarseTracker_forNewKF->refFrameID > coarseTracker->refFrameID)
+      else // do front-end operation.
       {
-        dmvio::TimeMeasurement referenceSwapTime("swapTrackingRef");
-        boost::unique_lock<boost::mutex> crlock(coarseTrackerSwapMutex);
-        CoarseTracker *tmp = coarseTracker;
-        coarseTracker = coarseTracker_forNewKF;
-        coarseTracker_forNewKF = tmp;
+        // --------------------------  Coarse tracking (after visual initializer succeeded). --------------------------
+        dmvio::TimeMeasurement coarseTrackingTime("fullCoarseTracking");
+        int lastFrameId = -1;
 
-        if (settings->useIMU)
+        // =========================== SWAP tracking reference?. =========================
+        bool trackingRefChanged = false;
+        if (coarseTracker_forNewKF->refFrameID > coarseTracker->refFrameID)
         {
-          // BA for new keyframe has finished and we have a new tracking reference.
-          if (!settings->debugout_runquiet)
+          dmvio::TimeMeasurement referenceSwapTime("swapTrackingRef");
+          boost::unique_lock<boost::mutex> crlock(coarseTrackerSwapMutex);
+          CoarseTracker *tmp = coarseTracker;
+          coarseTracker = coarseTracker_forNewKF;
+          coarseTracker_forNewKF = tmp;
+
+          if (settings->useIMU)
           {
-            std::cout << "New ref frame id: " << coarseTracker->refFrameID << " prepared keyframe id: "
-                      << imuIntegration.getPreparedKeyframe() << std::endl;
+            // BA for new keyframe has finished and we have a new tracking reference.
+            if (!settings->debugout_runquiet)
+            {
+              std::cout << "New ref frame id: " << coarseTracker->refFrameID << " prepared keyframe id: "
+                        << imuIntegration.getPreparedKeyframe() << std::endl;
+            }
+
+            lastFrameId = coarseTracker->refFrameID;
+
+            assert(coarseTracker->refFrameID == imuIntegration.getPreparedKeyframe());
+            SE3 lastRefToNewRef = imuIntegration.initCoarseGraph();
+
+            trackingRefChanged = true;
           }
-
-          lastFrameId = coarseTracker->refFrameID;
-
-          assert(coarseTracker->refFrameID == imuIntegration.getPreparedKeyframe());
-          SE3 lastRefToNewRef = imuIntegration.initCoarseGraph();
-
-          trackingRefChanged = true;
         }
-      }
 
-      SE3 *referenceToFramePassed = 0;
-      SE3 referenceToFrame;
-      if (settings->useIMU)
-      {
-        SE3 referenceToFrame = imuIntegration.addIMUData(*imuData, fh->shell->id,
-                                                         fh->shell->timestamp, trackingRefChanged, lastFrameId);
-        // If initialized we use the prediction from IMU data as initialization for the coarse tracking.
-        referenceToFramePassed = &referenceToFrame;
-        if (!imuIntegration.isCoarseInitialized())
-        {
-          referenceToFramePassed = nullptr;
-        }
-        imuIntegration.addIMUDataToBA(*imuData);
-      }
-
-      std::pair<Vec4, bool> pair = trackNewCoarse(fh, referenceToFramePassed);
-      dso::Vec4 tres = std::move(pair.first);
-      bool forceNoKF = !pair.second; // If coarse tracking was bad don't make KF.
-      bool forceKF = false;
-      if (!std::isfinite((double)tres[0]) || !std::isfinite((double)tres[1]) || !std::isfinite((double)tres[2]) || !std::isfinite((double)tres[3]))
-      {
+        SE3 *referenceToFramePassed = 0;
+        SE3 referenceToFrame;
         if (settings->useIMU)
         {
-          // If completely Nan, don't force noKF!
-          forceNoKF = false;
-          forceKF = true; // actually we force a KF in that situation as there are no points to track.
+          SE3 referenceToFrame = imuIntegration.addIMUData(*imuData, fh->shell->id,
+                                                           fh->shell->timestamp, trackingRefChanged, lastFrameId);
+          // If initialized we use the prediction from IMU data as initialization for the coarse tracking.
+          referenceToFramePassed = &referenceToFrame;
+          if (!imuIntegration.isCoarseInitialized())
+          {
+            referenceToFramePassed = nullptr;
+          }
+          imuIntegration.addIMUDataToBA(*imuData);
+        }
+
+        std::pair<Vec4, bool> pair = trackNewCoarse(fh, referenceToFramePassed);
+        dso::Vec4 tres = std::move(pair.first);
+        bool forceNoKF = !pair.second; // If coarse tracking was bad don't make KF.
+        bool forceKF = false;
+        if (!std::isfinite((double)tres[0]) || !std::isfinite((double)tres[1]) || !std::isfinite((double)tres[2]) || !std::isfinite((double)tres[3]))
+        {
+          if (settings->useIMU)
+          {
+            // If completely Nan, don't force noKF!
+            forceNoKF = false;
+            forceKF = true; // actually we force a KF in that situation as there are no points to track.
+          }
+          else
+          {
+            printf("Initial Tracking failed: LOST!\n");
+            isLost = true;
+            return;
+          }
+        }
+
+        double timeSinceLastKeyframe = fh->shell->timestamp - allKeyFramesHistory.back()->timestamp;
+        bool needToMakeKF = false;
+        if (settings->keyframesPerSecond > 0)
+        {
+          needToMakeKF = allFrameHistory.size() == 1 ||
+                         (fh->shell->timestamp - allKeyFramesHistory.back()->timestamp) > 0.95f / settings->keyframesPerSecond;
         }
         else
         {
-          printf("Initial Tracking failed: LOST!\n");
-          isLost = true;
-          return;
+          Vec2 refToFh = AffLight::fromToVecExposure(coarseTracker->lastRef->ab_exposure, fh->ab_exposure,
+                                                     coarseTracker->lastRef_aff_g2l, fh->shell->aff_g2l);
+
+          // BRIGHTNESS CHECK
+          needToMakeKF = allFrameHistory.size() == 1 ||
+                         settings->kfGlobalWeight * settings->maxShiftWeightT * sqrtf((double)tres[1]) / (settings->calibG.wG[0] + settings->calibG.hG[0]) +
+                                 settings->kfGlobalWeight * settings->maxShiftWeightR * sqrtf((double)tres[2]) / (settings->calibG.wG[0] + settings->calibG.hG[0]) +
+                                 settings->kfGlobalWeight * settings->maxShiftWeightRT * sqrtf((double)tres[3]) / (settings->calibG.wG[0] + settings->calibG.hG[0]) +
+                                 settings->kfGlobalWeight * settings->maxAffineWeight * fabs(logf((float)refToFh[0])) >
+                             1 ||
+                         2 * coarseTracker->firstCoarseRMSE < tres[0] ||
+                         (settings->maxTimeBetweenKeyframes > 0 && timeSinceLastKeyframe > settings->maxTimeBetweenKeyframes) ||
+                         forceKF;
+
+          if (needToMakeKF && !settings->debugout_runquiet)
+          {
+            std::cout << "Time since last keyframe: " << timeSinceLastKeyframe << std::endl;
+          }
         }
-      }
-
-      double timeSinceLastKeyframe = fh->shell->timestamp - allKeyFramesHistory.back()->timestamp;
-      bool needToMakeKF = false;
-      if (settings->keyframesPerSecond > 0)
-      {
-        needToMakeKF = allFrameHistory.size() == 1 ||
-                       (fh->shell->timestamp - allKeyFramesHistory.back()->timestamp) > 0.95f / settings->keyframesPerSecond;
-      }
-      else
-      {
-        Vec2 refToFh = AffLight::fromToVecExposure(coarseTracker->lastRef->ab_exposure, fh->ab_exposure,
-                                                   coarseTracker->lastRef_aff_g2l, fh->shell->aff_g2l);
-
-        // BRIGHTNESS CHECK
-        needToMakeKF = allFrameHistory.size() == 1 ||
-                       settings->kfGlobalWeight * settings->maxShiftWeightT * sqrtf((double)tres[1]) / (settings->calibG.wG[0] + settings->calibG.hG[0]) +
-                               settings->kfGlobalWeight * settings->maxShiftWeightR * sqrtf((double)tres[2]) / (settings->calibG.wG[0] + settings->calibG.hG[0]) +
-                               settings->kfGlobalWeight * settings->maxShiftWeightRT * sqrtf((double)tres[3]) / (settings->calibG.wG[0] + settings->calibG.hG[0]) +
-                               settings->kfGlobalWeight * settings->maxAffineWeight * fabs(logf((float)refToFh[0])) >
-                           1 ||
-                       2 * coarseTracker->firstCoarseRMSE < tres[0] ||
-                       (settings->maxTimeBetweenKeyframes > 0 && timeSinceLastKeyframe > settings->maxTimeBetweenKeyframes) ||
-                       forceKF;
-
-        if (needToMakeKF && !settings->debugout_runquiet)
+        double transNorm = fh->shell->camToTrackingRef.translation().norm() * imuIntegration.getCoarseScale();
+        if (imuIntegration.isCoarseInitialized() && transNorm < settings->forceNoKFTranslationThresh)
         {
-          std::cout << "Time since last keyframe: " << timeSinceLastKeyframe << std::endl;
+          forceNoKF = true;
         }
-      }
-      double transNorm = fh->shell->camToTrackingRef.translation().norm() * imuIntegration.getCoarseScale();
-      if (imuIntegration.isCoarseInitialized() && transNorm < settings->forceNoKFTranslationThresh)
-      {
-        forceNoKF = true;
-      }
-      if (forceNoKF)
-      {
-        std::cout << "Forcing NO KF!" << std::endl;
-        needToMakeKF = false;
-      }
-
-      if (needToMakeKF)
-      {
-        int prevKFId = fh->shell->trackingRef->id;
-        // In non-RT mode this will always be accurate, but in RT mode the printout in makeKeyframe is correct (because some of these KFs do not end up getting created).
-        int framesBetweenKFs = fh->shell->id - prevKFId - 1;
-
-        // Enforce settings->minFramesBetweenKeyframes.
-        if (framesBetweenKFs < (int)settings->minFramesBetweenKeyframes) // if integer value is smaller we just skip.
+        if (forceNoKF)
         {
-          std::cout << "Skipping KF because of minFramesBetweenKeyframes." << std::endl;
+          std::cout << "Forcing NO KF!" << std::endl;
           needToMakeKF = false;
         }
-        else if (framesBetweenKFs < settings->minFramesBetweenKeyframes) // Enforce it for non-integer values.
+
+        if (needToMakeKF)
         {
-          double fractionalPart = settings->minFramesBetweenKeyframes - (int)settings->minFramesBetweenKeyframes;
-          framesBetweenKFsRest += fractionalPart;
-          if (framesBetweenKFsRest >= 1.0)
+          int prevKFId = fh->shell->trackingRef->id;
+          // In non-RT mode this will always be accurate, but in RT mode the printout in makeKeyframe is correct (because some of these KFs do not end up getting created).
+          int framesBetweenKFs = fh->shell->id - prevKFId - 1;
+
+          // Enforce settings->minFramesBetweenKeyframes.
+          if (framesBetweenKFs < (int)settings->minFramesBetweenKeyframes) // if integer value is smaller we just skip.
           {
             std::cout << "Skipping KF because of minFramesBetweenKeyframes." << std::endl;
             needToMakeKF = false;
-            framesBetweenKFsRest--;
+          }
+          else if (framesBetweenKFs < settings->minFramesBetweenKeyframes) // Enforce it for non-integer values.
+          {
+            double fractionalPart = settings->minFramesBetweenKeyframes - (int)settings->minFramesBetweenKeyframes;
+            framesBetweenKFsRest += fractionalPart;
+            if (framesBetweenKFsRest >= 1.0)
+            {
+              std::cout << "Skipping KF because of minFramesBetweenKeyframes." << std::endl;
+              needToMakeKF = false;
+              framesBetweenKFsRest--;
+            }
           }
         }
+
+        if (settings->useIMU)
+        {
+          imuIntegration.finishCoarseTracking(*(fh->shell), needToMakeKF);
+        }
+
+        if (needToMakeKF && settings->useIMU && linearizeOperation)
+        {
+          imuIntegration.setGTData(gtData, fh->shell->id);
+        }
+
+        dmvio::TimeMeasurement timeLastStuff("afterCoarseTracking");
+
+        for (IOWrap::Output3DWrapper *ow : outputWrapper)
+          ow->publishCamPose(fh->shell, &Hcalib);
+
+        lock.unlock();
+        timeLastStuff.end();
+        coarseTrackingTime.end();
+        deliverTrackedFrame(fh, needToMakeKF);
+        return;
       }
-
-      if (settings->useIMU)
-      {
-        imuIntegration.finishCoarseTracking(*(fh->shell), needToMakeKF);
-      }
-
-      if (needToMakeKF && settings->useIMU && linearizeOperation)
-      {
-        imuIntegration.setGTData(gtData, fh->shell->id);
-      }
-
-      dmvio::TimeMeasurement timeLastStuff("afterCoarseTracking");
-
-      for (IOWrap::Output3DWrapper *ow : outputWrapper)
-        ow->publishCamPose(fh->shell, &Hcalib);
-
-      lock.unlock();
-      timeLastStuff.end();
-      coarseTrackingTime.end();
-      deliverTrackedFrame(fh, needToMakeKF);
-      return;
+    }
+    catch (const Sophus::EnsureFailed &e)
+    {
+      std::cerr << "Caught exception in tracking thread: " << e.what() << "\nRESETTING!!!" << std::endl;
+      settings->fullResetRequested = true;
+    }
+    catch (const std::exception &e)
+    {
+      std::cerr << "Caught exception in tracking thread: " << e.what() << std::endl;
+      throw;
+    }
+    catch (...)
+    {
+      std::cerr << "Caught unknown error in tracking thread!!!" << std::endl;
+      throw;
     }
   }
   void FullSystem::deliverTrackedFrame(FrameHessian *fh, bool needKF)
@@ -1132,12 +1153,12 @@ namespace dso
           char k = IOWrap::waitKey(0, settings);
           if (k == ' ')
             break;
-            settings->handleKey(k);
+          settings->handleKey(k);
         }
         lastRefStopID = coarseTracker->refFrameID;
       }
       else
-      settings->handleKey(IOWrap::waitKey(1, settings));
+        settings->handleKey(IOWrap::waitKey(1, settings));
 
       if (needKF)
       {
@@ -1187,74 +1208,27 @@ namespace dso
   {
     boost::unique_lock<boost::mutex> lock(trackMapSyncMutex);
 
-    while (runMapping)
+    try
     {
-      while (unmappedTrackedFrames.size() == 0)
+      while (runMapping)
       {
-        trackedFrameSignal.wait(lock);
-        if (!runMapping)
-          return;
-      }
-
-      FrameHessian *fh = unmappedTrackedFrames.front();
-      unmappedTrackedFrames.pop_front();
-
-      if (!settings->debugout_runquiet)
-      {
-        std::cout << "Current mapping id: " << fh->shell->id << " create KF after: " << needNewKFAfter << std::endl;
-      }
-
-      // guaranteed to make a KF for the very first two tracked frames.
-      if (allKeyFramesHistory.size() <= 2)
-      {
-        if (settings->useIMU)
+        while (unmappedTrackedFrames.size() == 0)
         {
-          imuIntegration.keyframeCreated(fh->shell->id);
-        }
-        lock.unlock();
-        makeKeyFrame(fh);
-        lock.lock();
-        mappedFrameSignal.notify_all();
-        continue;
-      }
-
-      if (unmappedTrackedFrames.size() > 3)
-        needToKetchupMapping = true;
-
-      if (unmappedTrackedFrames.size() > 0) // if there are other frames to track, do that first.
-      {
-
-        if (settings->useIMU && needNewKFAfter == fh->shell->id)
-        {
-          if (!settings->debugout_runquiet)
-          {
-            std::cout << "WARNING: Prepared keyframe got skipped!" << std::endl;
-          }
-          imuIntegration.skipPreparedKeyframe();
-          assert(false);
+          trackedFrameSignal.wait(lock);
+          if (!runMapping)
+            return;
         }
 
-        lock.unlock();
-        makeNonKeyFrame(fh);
-        lock.lock();
+        FrameHessian *fh = unmappedTrackedFrames.front();
+        unmappedTrackedFrames.pop_front();
 
-        if (needToKetchupMapping && unmappedTrackedFrames.size() > 0)
+        if (!settings->debugout_runquiet)
         {
-          FrameHessian *fh = unmappedTrackedFrames.front();
-          unmappedTrackedFrames.pop_front();
-          {
-            boost::unique_lock<boost::mutex> crlock(shellPoseMutex);
-            assert(fh->shell->trackingRef != 0);
-            fh->shell->camToWorld = fh->shell->trackingRef->camToWorld * fh->shell->camToTrackingRef;
-            fh->setEvalPT_scaled(fh->shell->camToWorld.inverse(), fh->shell->aff_g2l);
-          }
-          delete fh;
+          std::cout << "Current mapping id: " << fh->shell->id << " create KF after: " << needNewKFAfter << std::endl;
         }
-      }
-      else
-      {
-        bool createKF = settings->useIMU ? needNewKFAfter == fh->shell->id : needNewKFAfter >= frameHessians.back()->shell->id;
-        if (settings->realTimeMaxKF || createKF)
+
+        // guaranteed to make a KF for the very first two tracked frames.
+        if (allKeyFramesHistory.size() <= 2)
         {
           if (settings->useIMU)
           {
@@ -1262,17 +1236,82 @@ namespace dso
           }
           lock.unlock();
           makeKeyFrame(fh);
-          needToKetchupMapping = false;
           lock.lock();
+          mappedFrameSignal.notify_all();
+          continue;
         }
-        else
+
+        if (unmappedTrackedFrames.size() > 3)
+          needToKetchupMapping = true;
+
+        if (unmappedTrackedFrames.size() > 0) // if there are other frames to track, do that first.
         {
+
+          if (settings->useIMU && needNewKFAfter == fh->shell->id)
+          {
+            if (!settings->debugout_runquiet)
+            {
+              std::cout << "WARNING: Prepared keyframe got skipped!" << std::endl;
+            }
+            imuIntegration.skipPreparedKeyframe();
+            assert(false);
+          }
+
           lock.unlock();
           makeNonKeyFrame(fh);
           lock.lock();
+
+          if (needToKetchupMapping && unmappedTrackedFrames.size() > 0)
+          {
+            FrameHessian *fh = unmappedTrackedFrames.front();
+            unmappedTrackedFrames.pop_front();
+            {
+              boost::unique_lock<boost::mutex> crlock(shellPoseMutex);
+              assert(fh->shell->trackingRef != 0);
+              fh->shell->camToWorld = fh->shell->trackingRef->camToWorld * fh->shell->camToTrackingRef;
+              fh->setEvalPT_scaled(fh->shell->camToWorld.inverse(), fh->shell->aff_g2l);
+            }
+            delete fh;
+          }
         }
+        else
+        {
+          bool createKF = settings->useIMU ? needNewKFAfter == fh->shell->id : needNewKFAfter >= frameHessians.back()->shell->id;
+          if (settings->realTimeMaxKF || createKF)
+          {
+            if (settings->useIMU)
+            {
+              imuIntegration.keyframeCreated(fh->shell->id);
+            }
+            lock.unlock();
+            makeKeyFrame(fh);
+            needToKetchupMapping = false;
+            lock.lock();
+          }
+          else
+          {
+            lock.unlock();
+            makeNonKeyFrame(fh);
+            lock.lock();
+          }
+        }
+        mappedFrameSignal.notify_all();
       }
-      mappedFrameSignal.notify_all();
+    }
+    catch (const Sophus::EnsureFailed &e)
+    {
+      std::cerr << "Caught exception in mapping thread: " << e.what() << "\nRESETTING!!!" << std::endl;
+      settings->fullResetRequested = true;
+    }
+    catch (const std::exception &e)
+    {
+      std::cerr << "Caught exception in mapping thread: " << e.what() << std::endl;
+      throw;
+    }
+    catch (...)
+    {
+      std::cerr << "Caught unknown error in mapping thread!!!" << std::endl;
+      throw;
     }
     printf("MAPPING FINISHED!\n");
   }
@@ -1375,19 +1414,11 @@ namespace dso
     // =========================== Figure Out if INITIALIZATION FAILED =========================
     if (allKeyFramesHistory.size() <= 4)
     {
-      if (allKeyFramesHistory.size() == 2 && rmse > 20 * settings->benchmark_initializerSlackFactor)
+      if ((allKeyFramesHistory.size() == 2 && rmse > 20 * settings->benchmark_initializerSlackFactor) ||
+          (allKeyFramesHistory.size() == 3 && rmse > 13 * settings->benchmark_initializerSlackFactor) ||
+          (allKeyFramesHistory.size() == 4 && rmse > 9 * settings->benchmark_initializerSlackFactor))
       {
-        printf("I THINK INITIALIZATINO FAILED! Resetting.\n");
-        initFailed = true;
-      }
-      if (allKeyFramesHistory.size() == 3 && rmse > 13 * settings->benchmark_initializerSlackFactor)
-      {
-        printf("I THINK INITIALIZATINO FAILED! Resetting.\n");
-        initFailed = true;
-      }
-      if (allKeyFramesHistory.size() == 4 && rmse > 9 * settings->benchmark_initializerSlackFactor)
-      {
-        printf("I THINK INITIALIZATINO FAILED! Resetting.\n");
+        printf("I THINK INITIALIZATION FAILED! Resetting.\n");
         initFailed = true;
       }
     }

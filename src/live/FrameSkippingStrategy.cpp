@@ -64,6 +64,7 @@ int dmvio::FrameSkippingStrategy::getMaxSkipFrames(int queueSize)
   case VISUAL_INERTIAL:
     return settings.maxSkipFramesVisualInertial;
   }
+  return -2; // Unreachable, but avoids compiler warning.
 }
 
 void dmvio::FrameSkippingStrategy::publishSystemStatus(dmvio::SystemStatus systemStatus)
@@ -72,6 +73,10 @@ void dmvio::FrameSkippingStrategy::publishSystemStatus(dmvio::SystemStatus syste
   if (lastStatus == VISUAL_INIT && systemStatus == VISUAL_ONLY)
   {
     visualOnlyDelay = settings.skipFramesVisualOnlyDelay;
+  }
+  else if (lastStatus == VISUAL_ONLY && systemStatus == VISUAL_INIT)
+  {
+    resetLast = true;
   }
   lastStatus = systemStatus;
 }

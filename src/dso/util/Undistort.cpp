@@ -196,7 +196,7 @@ namespace dso
       {
         printf("PhotometricUndistorter: G invalid! it has to be strictly increasing, but it isnt!\n");
         // Treat this as a warning rather than an error, as it has not caused issues in the past.
-        // return;
+        break;
       }
     }
 

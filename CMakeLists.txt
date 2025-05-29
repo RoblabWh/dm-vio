@@ -117,6 +117,7 @@ set(dmvio_SOURCE_FILES
   src/util/MainSettings.cpp
   src/live/FrameSkippingStrategy.cpp
   src/live/DatasetSaver.cpp
+  src/util/SophusEnsureHandler.cpp
 )
 
 add_subdirectory(thirdparty/Sophus)
@@ -187,6 +188,7 @@ target_include_directories(dmvio
   ${PROJECT_SOURCE_DIR}/src/dso
   ${PROJECT_SOURCE_DIR}/thirdparty/sse2neon
 )
+target_compile_definitions(dmvio PUBLIC SOPHUS_ENABLE_ENSURE_HANDLER=1)
 set_target_properties(dmvio PROPERTIES
     POSITION_INDEPENDENT_CODE ON
 )

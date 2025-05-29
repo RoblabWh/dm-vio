@@ -44,6 +44,7 @@
 
 #include <math.h>
 #include "IMUInitialization/GravityInitializer.h"
+#include "util/SophusEnsureHandler.h"
 
 namespace dso
 {
