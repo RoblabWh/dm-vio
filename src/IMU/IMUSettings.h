@@ -117,7 +117,7 @@ namespace dmvio
 
     IMUCalibration(std::string settingsFilename, size_t cameraIndex);
     IMUCalibration(const dso::SE3 &tCamImu);
-    void loadFromFile(std::string settingsFilename, size_t cameraIndex);
+    void loadFromFile(std::string settingsFilename, size_t cameraIndex, double noiseFactor = 160.0, double biasFactor = 500.0);
     void saveToFile(std::string filename); // Save T_cam_imu to as a camchain.yaml.
 
     // The noise values are registered as settings so they can be set from commandline and from the settings yaml.
