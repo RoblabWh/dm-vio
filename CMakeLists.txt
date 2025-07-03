@@ -120,7 +120,6 @@ set(dmvio_SOURCE_FILES
   src/util/SophusEnsureHandler.cpp
 )
 
-add_subdirectory(thirdparty/Sophus)
 add_subdirectory(thirdparty/basalt-headers)
 
 option(BUILD_EXECUTABLES "Build executables" ON)

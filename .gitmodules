@@ -7,6 +7,3 @@
 [submodule "thirdparty/basalt-headers"]
 	path = thirdparty/basalt-headers
 	url = git@github.com:RoblabWh/basalt-headers.git
-[submodule "thirdparty/Sophus"]
-	path = thirdparty/Sophus
-	url = https://github.com/strasdat/Sophus.git

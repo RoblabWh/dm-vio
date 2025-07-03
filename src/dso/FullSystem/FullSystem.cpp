@@ -57,8 +57,6 @@
 #include "util/TimeMeasurement.h"
 #include "GTSAMIntegration/ExtUtils.h"
 
-#include "util/SophusEnsureHandler.h"
-
 using dmvio::GravityInitializer;
 
 namespace dso
@@ -1091,11 +1089,6 @@ namespace dso
         return;
       }
     }
-    catch (const Sophus::EnsureFailed &e)
-    {
-      std::cerr << "Caught exception in tracking thread: " << e.what() << "\nRESETTING!!!" << std::endl;
-      settings->fullResetRequested = true;
-    }
     catch (const std::exception &e)
     {
       std::cerr << "Caught exception in tracking thread: " << e.what() << std::endl;
@@ -1297,11 +1290,6 @@ namespace dso
         }
         mappedFrameSignal.notify_all();
       }
-    }
-    catch (const Sophus::EnsureFailed &e)
-    {
-      std::cerr << "Caught exception in mapping thread: " << e.what() << "\nRESETTING!!!" << std::endl;
-      settings->fullResetRequested = true;
     }
     catch (const std::exception &e)
     {
