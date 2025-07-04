@@ -384,9 +384,8 @@ int main(int argc, char **argv)
   // hook crtl+C.
   boost::thread exThread = boost::thread(exitThread);
 
-  // TODO changed this for testing
-  //  ImageFolderReader *reader = new ImageFolderReader(source, mainSettings.calib, mainSettings.gammaCalib, mainSettings.vignette, use16Bit, tsFile);
-  DaiFolderReader *reader = new DaiFolderReader(&dsoSettings, source, mainSettings.calib, use16Bit);
+  ImageFolderReader *reader = new ImageFolderReader(&dsoSettings, source, mainSettings.calib, mainSettings.gammaCalib, mainSettings.vignette, use16Bit, tsFile);
+  // DaiFolderReader *reader = new DaiFolderReader(&dsoSettings, source, mainSettings.calib, use16Bit);
   reader->loadIMUData(imuFile);
   reader->setGlobalCalibration();
 

@@ -10,7 +10,6 @@ set(LIBRARY_OUTPUT_PATH lib)
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 # required libraries
-find_package(Eigen3 REQUIRED)
 find_package(Boost COMPONENTS system thread)
 find_package(GTSAM REQUIRED)
 find_package(yaml-cpp REQUIRED)
@@ -57,8 +56,8 @@ if(MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
 endif(MSVC)
 
-option(DMVIO_MARCH_NATIVE "Use -march=native (HAS to match GTSAM setting)" ON)
-if (DMVIO_MARCH_NATIVE)
+option(MARCH_NATIVE "Use -march=native (HAS to match GTSAM setting)" ON)
+if (MARCH_NATIVE)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
 endif()
 
