@@ -87,7 +87,7 @@ namespace dso
     ImageAndExposure *undistort(const MinimalImage<T> *image_raw, float exposure = 0, double timestamp = 0, float factor = 1) const;
     static Undistort *makeFromCalibration(Settings *settings, std::string configFilename, std::string gammaFilename = "", std::string vignetteFilename = "");
     static Undistort *makeFromDSOCalibration(Settings *settings, std::string configFilename, std::string gammaFilename, std::string vignetteFilename);
-    static Undistort *makeFromBasaltCalibration(Settings *settings, std::string configFilename);
+    static Undistort *makeFromBasaltCalibration(Settings *settings, std::string configFilename, const std::vector<double> &targetCalib = std::vector<double>());
 
     void loadPhotometricCalibration(std::string file, std::string noiseImage, std::string vignetteImage);
 
@@ -111,7 +111,7 @@ namespace dso
     void makeOptimalK_crop();
     void makeOptimalK_full();
 
-    void readFromFile(const char *configFileName, int nPars, std::string prefix = "");
+    void readFromFile(const char *configFileName, int nPars, const std::string &prefix = "");
   };
 
   class UndistortFOV : public Undistort
@@ -167,7 +167,7 @@ namespace dso
   {
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    UndistortBasalt(const char *configFileName, Settings *settings);
+    UndistortBasalt(const char *configFileName, Settings *settings, const std::vector<double> &targetCalib);
     ~UndistortBasalt();
     void distortCoordinates(float *in_x, float *in_y, float *out_x, float *out_y, int n) const;
 

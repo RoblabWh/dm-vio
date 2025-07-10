@@ -446,10 +446,10 @@ namespace dso
     return u;
   }
 
-  Undistort *Undistort::makeFromBasaltCalibration(Settings *settings, std::string configFilename)
+  Undistort *Undistort::makeFromBasaltCalibration(Settings *settings, std::string configFilename, const std::vector<double> &targetCalib)
   {
     printf("Reading Calibration from file %s", configFilename.c_str());
-    return new UndistortBasalt(configFilename.c_str(), settings);
+    return new UndistortBasalt(configFilename.c_str(), settings, targetCalib);
   }
 
   void Undistort::loadPhotometricCalibration(std::string file, std::string noiseImage, std::string vignetteImage)
@@ -786,7 +786,7 @@ namespace dso
     assert(false);
   }
 
-  void Undistort::readFromFile(const char *configFileName, int nPars, std::string prefix)
+  void Undistort::readFromFile(const char *configFileName, int nPars, const std::string &prefix)
   {
     photometricUndist = 0;
     valid = false;
@@ -815,7 +815,36 @@ namespace dso
       wOrg = res[0];
       hOrg = res[1];
 
-      outputCalibration[0] = -1;
+      assert(nPars * sizeof(double) == prefix.size());
+      const double *targetCalib = reinterpret_cast<const double *>(prefix.data());
+      switch (nPars)
+      {
+      case 1:
+        outputCalibration[0] = targetCalib[0];
+        outputCalibration[1] = targetCalib[0];
+        outputCalibration[2] = 0.5;
+        outputCalibration[3] = 0.5;
+        outputCalibration[4] = 0;
+        break;
+      case 2:
+        outputCalibration[0] = targetCalib[0];
+        outputCalibration[1] = targetCalib[1];
+        outputCalibration[2] = 0.5;
+        outputCalibration[3] = 0.5;
+        outputCalibration[4] = 0;
+        break;
+      case 4:
+        outputCalibration[0] = targetCalib[0];
+        outputCalibration[1] = targetCalib[1];
+        outputCalibration[2] = targetCalib[2];
+        outputCalibration[3] = targetCalib[3];
+        outputCalibration[4] = 0;
+        break;
+      default:
+        outputCalibration[0] = -1;
+        break;
+      }
+
 #ifdef DEBUG
       // Hardcode crop to 512x512 (other resolutions are not supported during debugging)
       w = 512;
@@ -1318,7 +1347,7 @@ namespace dso
     }
   }
 
-  UndistortBasalt::UndistortBasalt(const char *configFileName, Settings *settings_)
+  UndistortBasalt::UndistortBasalt(const char *configFileName, Settings *settings_, const std::vector<double> &targetCalib)
   {
     settings = settings_;
     std::ifstream configFile(configFileName);
@@ -1335,7 +1364,11 @@ namespace dso
     cereal::JSONInputArchive archive(configFile);
     archive(calib);
 
-    readFromFile(configFileName, 0);
+    std::string targetCalibBuffer;
+    targetCalibBuffer.resize(targetCalib.size() * sizeof(double));
+    std::memcpy(targetCalibBuffer.data(), targetCalib.data(), targetCalib.size() * sizeof(double));
+
+    readFromFile(configFileName, targetCalib.size(), targetCalibBuffer);
 
     const auto vign = calib.vignette_map(settings->multiCameraIndex);
     photometricUndist = new PhotometricUndistorter(calib.response[settings->multiCameraIndex], Eigen::Map<const Eigen::VectorXd>(vign.data(), vign.size()), calib.resolution[settings->multiCameraIndex], settings);
