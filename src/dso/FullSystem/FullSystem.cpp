@@ -919,7 +919,7 @@ namespace dso
 
             // Maybe change first frame.
             double timeBetweenFrames = fh->shell->timestamp - coarseInitializer->firstFrame->shell->timestamp;
-            std::cout << "InitTimeBetweenFrames: " << timeBetweenFrames << std::endl;
+            // std::cout << "InitTimeBetweenFrames: " << timeBetweenFrames << std::endl;
             if (timeBetweenFrames > imuIntegration.getImuSettings().maxTimeBetweenInitFrames)
             {
               // Do full reset so that the next frame becomes the first initializer frame.

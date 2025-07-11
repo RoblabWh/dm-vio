@@ -212,7 +212,7 @@ void dmvio::MainSettings::settingsDefault(int preset)
   {
     printf("DEFAULT settings:\n"
            "- %s real-time enforcing\n"
-           "- 2000 active points\n"
+           "- 1000 active points\n"
            "- 5-7 active frames\n"
            "- 1-6 LM iteration each KF\n"
            "- original image resolution\n",
