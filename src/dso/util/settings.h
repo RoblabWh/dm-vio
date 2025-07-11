@@ -243,17 +243,13 @@ namespace dso
     }
   };
 
-  extern int staticPattern[10][40][2];
-  extern int staticPatternNum[10];
-  extern int staticPatternPadding[10];
+  extern int staticPattern[13][40][2];
+  extern int staticPatternNum[13];
+  extern int staticPatternPadding[13];
 
-// #define patternNum staticPatternNum[pattern]
-// #define patternP staticPattern[pattern]
-// #define patternPadding staticPatternPadding[pattern]
-
-//
-#define patternNum 8
-#define patternP staticPattern[8]
-#define patternPadding 2
+  const int pattern = 8;
+  const int patternNum = staticPatternNum[pattern];
+  const auto patternP = staticPattern[pattern];
+  const int patternPadding = staticPatternPadding[pattern];
 
 }
