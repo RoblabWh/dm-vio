@@ -26,8 +26,8 @@
 using namespace dmvio;
 using namespace std::chrono;
 
-std::map<std::string, dmvio::MeasurementLog> dmvio::TimeMeasurement::logs = std::map<std::string, MeasurementLog>();
-bool dmvio::TimeMeasurement::saveFileOpen = false;
+// std::map<std::string, dmvio::MeasurementLog> dmvio::TimeMeasurement::logs = std::map<std::string, MeasurementLog>();
+// bool dmvio::TimeMeasurement::saveFileOpen = false;
 
 dmvio::TimeMeasurement::TimeMeasurement(std::string name)
     : name(name)
@@ -50,7 +50,7 @@ double dmvio::TimeMeasurement::end()
   auto end = high_resolution_clock::now();
   double duration = duration_cast<std::chrono::duration<double>>(end - begin).count();
 
-  logs[name].addMeasurement(duration);
+  // logs[name].addMeasurement(duration);
 
   ended = true;
 
@@ -62,10 +62,10 @@ void dmvio::TimeMeasurement::saveResults(std::string filename)
   std::ofstream saveFile;
   saveFile.open(filename);
 
-  for (const auto &pair : logs)
-  {
-    saveFile << pair.first << ' ' << pair.second << '\n';
-  }
+  // for (const auto &pair : logs)
+  // {
+  //   saveFile << pair.first << ' ' << pair.second << '\n';
+  // }
   saveFile.close();
 }
 
