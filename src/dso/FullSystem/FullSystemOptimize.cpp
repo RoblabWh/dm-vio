@@ -567,7 +567,7 @@ namespace dso
     }
 
     {
-      boost::unique_lock<boost::mutex> crlock(shellPoseMutex);
+      boost::unique_lock<boost::mutex> crlock(settings->shellPoseMutex);
       for (FrameHessian *fh : frameHessians)
       {
         fh->shell->camToWorld = fh->PRE_camToWorld;

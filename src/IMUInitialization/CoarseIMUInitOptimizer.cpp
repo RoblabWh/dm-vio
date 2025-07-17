@@ -166,7 +166,7 @@ dmvio::CoarseIMUInitOptimizer::OptimizationResult dmvio::CoarseIMUInitOptimizer:
   if (settings.updatePoses)
   {
     // Get the newest poses from DSO.
-    boost::unique_lock<boost::mutex> lock(dso::FrameShell::shellPoseMutex);
+    boost::unique_lock<boost::mutex> lock(dsoSettings->shellPoseMutex);
     for (auto &&factor : graph)
     {
       PoseTransformationFactor *casted = dynamic_cast<PoseTransformationFactor *>(factor.get());
@@ -240,7 +240,7 @@ void CoarseIMUInitOptimizer::takeOverOptimizedValues()
 
 void CoarseIMUInitOptimizer::addPose(const dso::FrameShell &shell, const gtsam::PreintegratedImuMeasurements *imuData)
 {
-  boost::unique_lock<boost::mutex> lock(dso::FrameShell::shellPoseMutex);
+  boost::unique_lock<boost::mutex> lock(dsoSettings->shellPoseMutex);
   if (settings.updatePoses)
   {
     activeShells[shell.id] = &shell;

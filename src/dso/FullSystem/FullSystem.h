@@ -286,9 +286,6 @@ namespace dso
     float minIdJetVisTracker, maxIdJetVisTracker;
     float minIdJetVisDebug, maxIdJetVisDebug;
 
-    // mutex for camToWorl's in shells (these are always in a good configuration).
-    boost::mutex &shellPoseMutex;
-
     /*
      * tracking always uses the newest KF as reference.
      *

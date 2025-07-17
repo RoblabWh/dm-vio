@@ -29,6 +29,7 @@
 #include <string>
 #include <cmath>
 #include "util/NumType.h"
+#include <boost/thread/mutex.hpp>
 
 namespace dso
 {
@@ -241,6 +242,12 @@ namespace dso
         break;
       }
     }
+
+    int FrameHessianInstanceCounter = 0;
+    int PointHessianInstanceCounter = 0;
+    int CalibHessianInstanceCounter = 0;
+    int PointFrameResidualInstanceCounter = 0;
+    boost::mutex shellPoseMutex;
   };
 
   extern int staticPattern[13][40][2];

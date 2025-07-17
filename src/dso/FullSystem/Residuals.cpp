@@ -46,20 +46,18 @@
 
 namespace dso
 {
-  int PointFrameResidual::instanceCounter = 0;
-
   long runningResID = 0;
 
   PointFrameResidual::PointFrameResidual()
   {
     assert(false);
-    instanceCounter++;
+    settings->PointFrameResidualInstanceCounter++;
   }
 
   PointFrameResidual::~PointFrameResidual()
   {
     assert(efResidual == 0);
-    instanceCounter--;
+    settings->PointFrameResidualInstanceCounter--;
     delete J;
   }
 
@@ -69,7 +67,7 @@ namespace dso
                                                                                                                                  settings(settings)
   {
     efResidual = 0;
-    instanceCounter++;
+    settings->PointFrameResidualInstanceCounter++;
     resetOOB();
     J = new RawResidualJacobian();
     assert(((long)J) % 16 == 0);

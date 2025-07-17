@@ -61,19 +61,13 @@ using dmvio::GravityInitializer;
 
 namespace dso
 {
-  int FrameHessian::instanceCounter = 0;
-  int PointHessian::instanceCounter = 0;
-  int CalibHessian::instanceCounter = 0;
-
-  boost::mutex FrameShell::shellPoseMutex{};
-
   FullSystem::FullSystem(bool linearizeOperationPassed, const dmvio::IMUCalibration &imuCalibration,
                          dmvio::IMUSettings &imuSettings, Settings *settings)
       : linearizeOperation(linearizeOperationPassed), imuIntegration(&Hcalib, imuCalibration, imuSettings,
                                                                      linearizeOperation, settings),
         settings(settings),
         secondKeyframeDone(false), gravityInit(imuSettings.numMeasurementsGravityInit, imuCalibration),
-        shellPoseMutex(FrameShell::shellPoseMutex), Hcalib(settings->calibG)
+        Hcalib(settings)
   {
     settings->useGTSAMIntegration = settings->useIMU;
     baIntegration = imuIntegration.getBAGTSAMIntegration().get();
@@ -253,7 +247,7 @@ namespace dso
   void FullSystem::printResult(std::string file, bool onlyLogKFPoses, bool saveMetricPoses, bool useCamToTrackingRef)
   {
     boost::unique_lock<boost::mutex> lock(trackMutex);
-    boost::unique_lock<boost::mutex> crlock(shellPoseMutex);
+    boost::unique_lock<boost::mutex> crlock(settings->shellPoseMutex);
 
     std::ofstream myfile;
     myfile.open(file.c_str());
@@ -311,7 +305,7 @@ namespace dso
       lastF_2_fh_tries.push_back(*referenceToFrameHint);
       {
         // lock on global pose consistency (probably we don't need this for AffineLight, but just to make sure).
-        boost::unique_lock<boost::mutex> crlock(shellPoseMutex);
+        boost::unique_lock<boost::mutex> crlock(settings->shellPoseMutex);
         // Set Affine light to last frame, where tracking was good!:
         for (int i = allFrameHistory.size() - 2; i >= 0; i--)
         {
@@ -343,7 +337,7 @@ namespace dso
         SE3 slast_2_sprelast;
         SE3 lastF_2_slast;
         { // lock on global pose consistency!
-          boost::unique_lock<boost::mutex> crlock(shellPoseMutex);
+          boost::unique_lock<boost::mutex> crlock(settings->shellPoseMutex);
           slast_2_sprelast = sprelast->camToWorld.inverse() * slast->camToWorld;
           lastF_2_slast = slast->camToWorld.inverse() * lastF->shell->camToWorld;
           aff_last_2_l = slast->aff_g2l;
@@ -1259,7 +1253,7 @@ namespace dso
             FrameHessian *fh = unmappedTrackedFrames.front();
             unmappedTrackedFrames.pop_front();
             {
-              boost::unique_lock<boost::mutex> crlock(shellPoseMutex);
+              boost::unique_lock<boost::mutex> crlock(settings->shellPoseMutex);
               assert(fh->shell->trackingRef != 0);
               fh->shell->camToWorld = fh->shell->trackingRef->camToWorld * fh->shell->camToTrackingRef;
               fh->setEvalPT_scaled(fh->shell->camToWorld.inverse(), fh->shell->aff_g2l);
@@ -1319,7 +1313,7 @@ namespace dso
     dmvio::TimeMeasurement timeMeasurement("makeNonKeyframe");
     // needs to be set by mapping thread. no lock required since we are in mapping thread.
     {
-      boost::unique_lock<boost::mutex> crlock(shellPoseMutex);
+      boost::unique_lock<boost::mutex> crlock(settings->shellPoseMutex);
       assert(fh->shell->trackingRef != 0);
       fh->shell->camToWorld = fh->shell->trackingRef->camToWorld * fh->shell->camToTrackingRef;
       fh->setEvalPT_scaled(fh->shell->camToWorld.inverse(), fh->shell->aff_g2l);
@@ -1334,7 +1328,7 @@ namespace dso
     dmvio::TimeMeasurement timeMeasurement("makeKeyframe");
     // needs to be set by mapping thread
     {
-      boost::unique_lock<boost::mutex> crlock(shellPoseMutex);
+      boost::unique_lock<boost::mutex> crlock(settings->shellPoseMutex);
       assert(fh->shell->trackingRef != 0);
       fh->shell->camToWorld = fh->shell->trackingRef->camToWorld * fh->shell->camToTrackingRef;
       fh->setEvalPT_scaled(fh->shell->camToWorld.inverse(), fh->shell->aff_g2l);
@@ -1584,7 +1578,7 @@ namespace dso
 
     // really no lock required, as we are initializing.
     {
-      boost::unique_lock<boost::mutex> crlock(shellPoseMutex);
+      boost::unique_lock<boost::mutex> crlock(settings->shellPoseMutex);
       firstFrame->shell->camToWorld = firstPose;
       firstFrame->shell->aff_g2l = AffLight(0, 0);
       firstFrame->setEvalPT_scaled(firstFrame->shell->camToWorld.inverse(), firstFrame->shell->aff_g2l);

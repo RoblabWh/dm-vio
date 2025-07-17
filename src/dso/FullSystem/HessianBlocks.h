@@ -73,7 +73,6 @@ namespace dso
   {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     // static values
-    static int instanceCounter;
     FrameHessian *host;   // defines row
     FrameHessian *target; // defines column
 
@@ -113,7 +112,6 @@ namespace dso
     bool addCamPrior;
 
     int frameID; // incremental ID for keyframes only!
-    static int instanceCounter;
     int idx;
 
     // Photometric Calibration Stuff
@@ -213,7 +211,7 @@ namespace dso
     {
       assert(efFrame == 0);
       release();
-      instanceCounter--;
+      settings->FrameHessianInstanceCounter--;
       for (int i = 0; i < settings->pyrLevelsUsed; i++)
       {
         delete[] dIp[i];
@@ -225,7 +223,7 @@ namespace dso
     };
     inline FrameHessian(Settings *settings) : settings(settings)
     {
-      instanceCounter++;
+      settings->FrameHessianInstanceCounter++;
       flaggedForMarginalization = false;
       frameID = -1;
       efFrame = 0;
@@ -286,7 +284,6 @@ namespace dso
   struct CalibHessian
   {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    static int instanceCounter;
 
     VecC value_zero;
     VecC value_scaled;
@@ -298,21 +295,23 @@ namespace dso
     VecC value_backup;
     VecC value_minus_value_zero;
 
-    inline ~CalibHessian() { instanceCounter--; }
-    inline CalibHessian(const GlobalCalib &calibG)
+    Settings *settings;
+
+    inline ~CalibHessian() { settings->CalibHessianInstanceCounter--; }
+    inline CalibHessian(Settings *settings) : settings(settings)
     {
 
       VecC initial_value = VecC::Zero();
-      initial_value[0] = calibG.fxG[0];
-      initial_value[1] = calibG.fyG[0];
-      initial_value[2] = calibG.cxG[0];
-      initial_value[3] = calibG.cyG[0];
+      initial_value[0] = settings->calibG.fxG[0];
+      initial_value[1] = settings->calibG.fyG[0];
+      initial_value[2] = settings->calibG.cxG[0];
+      initial_value[3] = settings->calibG.cyG[0];
 
       setValueScaled(initial_value);
       value_zero = value;
       value_minus_value_zero.setZero();
 
-      instanceCounter++;
+      settings->CalibHessianInstanceCounter++;
       for (int i = 0; i < 256; i++)
         Binv[i] = B[i] = i; // set gamma function to identity
     };
@@ -388,7 +387,6 @@ namespace dso
   struct PointHessian
   {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    static int instanceCounter;
     EFPoint *efPoint;
 
     // static values
@@ -456,7 +454,7 @@ namespace dso
     {
       assert(efPoint == 0);
       release();
-      instanceCounter--;
+      settings->PointHessianInstanceCounter--;
     }
 
     inline bool isOOB(const std::vector<FrameHessian *> &toKeep, const std::vector<FrameHessian *> &toMarg) const

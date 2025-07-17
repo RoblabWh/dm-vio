@@ -64,8 +64,6 @@ namespace dso
 
     EFResidual *efResidual;
 
-    static int instanceCounter;
-
     ResState state_state;
     double state_energy;
     ResState state_NewState;

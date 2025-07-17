@@ -31,7 +31,7 @@ namespace dso
 
   PointHessian::PointHessian(const ImmaturePoint *const rawPoint, CalibHessian *Hcalib, Settings *settings) : settings(settings)
   {
-    instanceCounter++;
+    settings->PointHessianInstanceCounter++;
     host = rawPoint->host;
     hasDepthPrior = false;
 

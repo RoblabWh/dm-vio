@@ -27,7 +27,6 @@
 
 #include "util/NumType.h"
 #include "algorithm"
-#include <boost/thread/mutex.hpp>
 
 namespace dso
 {
@@ -57,8 +56,6 @@ namespace dso
     int statistics_goodResOnThis;
     int marginalizedAt;
     double movedByOpt;
-
-    static boost::mutex shellPoseMutex;
 
     inline FrameShell()
     {
