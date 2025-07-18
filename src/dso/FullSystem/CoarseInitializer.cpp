@@ -659,7 +659,7 @@ namespace dso
       int nnn = 0;
       for (int j = 0; j < 10; j++)
       {
-        if (point->neighbours[j] == -1)
+        if (point->neighbours[j] < 0)
           continue;
         Pnt *other = ptsl + point->neighbours[j];
         if (!other->isGood)
@@ -697,7 +697,7 @@ namespace dso
     for (int i = 0; i < nptss; i++)
     {
       Pnt *point = ptss + i;
-      if (!point->isGood)
+      if (point->parent < 0 || !point->isGood)
         continue;
 
       Pnt *parent = ptst + point->parent;
@@ -732,7 +732,7 @@ namespace dso
       Pnt *point = ptst + i;
       Pnt *parent = ptss + point->parent;
 
-      if (!parent->isGood || parent->lastHessian < 0.1)
+      if (point->parent < 0 || !parent->isGood || parent->lastHessian < 0.1)
         continue;
       if (!point->isGood)
       {
@@ -869,7 +869,7 @@ namespace dso
         float snd = 0, sn = 0;
         for (int n = 0; n < 10; n++)
         {
-          if (pts[i].neighbours[n] == -1 || !pts[pts[i].neighbours[n]].isGood)
+          if (pts[i].neighbours[n] < 0 || !pts[pts[i].neighbours[n]].isGood)
             continue;
           snd += pts[pts[i].neighbours[n]].iR;
           sn += 1;
@@ -984,17 +984,16 @@ namespace dso
       indexes[i]->buildIndex();
     }
 
-    const int nn = 10;
-
     // find NN & parents
     for (int lvl = 0; lvl < settings->pyrLevelsUsed; lvl++)
     {
       Pnt *pts = points[lvl];
       int npts = numPoints[lvl];
+      int nn = std::min(10, npts);
 
-      int ret_index[nn];
-      float ret_dist[nn];
-      nanoflann::KNNResultSet<float, int, int> resultSet(nn);
+      int ret_index[10];
+      float ret_dist[10];
+      nanoflann::KNNResultSet<float, int, int> resultSet(10);
       nanoflann::KNNResultSet<float, int, int> resultSet1(1);
 
       for (int i = 0; i < npts; i++)
@@ -1003,21 +1002,24 @@ namespace dso
         resultSet.init(ret_index, ret_dist);
         Vec2f pt = Vec2f(pts[i].u, pts[i].v);
         indexes[lvl]->findNeighbors(resultSet, (float *)&pt, nanoflann::SearchParams());
-        int myidx = 0;
         float sumDF = 0;
         for (int k = 0; k < nn; k++)
         {
-          pts[i].neighbours[myidx] = ret_index[k];
+          pts[i].neighbours[k] = ret_index[k];
           float df = expf(-ret_dist[k] * NNDistFactor);
           sumDF += df;
-          pts[i].neighboursDist[myidx] = df;
+          pts[i].neighboursDist[k] = df;
           assert(ret_index[k] >= 0 && ret_index[k] < npts);
-          myidx++;
         }
         for (int k = 0; k < nn; k++)
           pts[i].neighboursDist[k] *= 10 / sumDF;
+        for (int k = nn; k < 10; k++)
+        {
+          pts[i].neighbours[k] = -1;
+          pts[i].neighboursDist[k] = -1;
+        }
 
-        if (lvl < settings->pyrLevelsUsed - 1)
+        if (lvl < settings->pyrLevelsUsed - 1 && ret_index[0] >= 0 && ret_index[0] < numPoints[lvl + 1])
         {
           resultSet1.init(ret_index, ret_dist);
           pt = pt * 0.5f - Vec2f(0.25f, 0.25f);
@@ -1025,8 +1027,6 @@ namespace dso
 
           pts[i].parent = ret_index[0];
           pts[i].parentDist = expf(-ret_dist[0] * NNDistFactor);
-
-          assert(ret_index[0] >= 0 && ret_index[0] < numPoints[lvl + 1]);
         }
         else
         {
