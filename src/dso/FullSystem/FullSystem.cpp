@@ -267,6 +267,7 @@ namespace dso
       // Use camToTrackingReference for nonKFs and the updated camToWorld for KFs.
       if (useCamToTrackingRef && s->keyframeId == -1)
       {
+        if (s->trackingRef == nullptr) continue;
         camToWorld = s->trackingRef->camToWorld * s->camToTrackingRef;
       }
       SE3 camToFirst = firstPose.inverse() * camToWorld;
@@ -476,11 +477,7 @@ namespace dso
       std::cout << "Predicted pose:\n"
                 << lastF_2_fh.matrix() << std::endl;
       if (lastF_2_fh.translation().norm() > 100000 || lastF_2_fh.matrix().hasNaN())
-      {
-        std::cout << "TRACKING FAILED ENTIRELY, NO HOPE TO RECOVER" << std::endl;
-        std::cerr << "TRACKING FAILED ENTIRELY, NO HOPE TO RECOVER" << std::endl;
-        exit(1);
-      }
+        throw std::runtime_error("Tracking failed entirely, no hope to recover.");
     }
 
     lastCoarseRMSE = achievedRes;
