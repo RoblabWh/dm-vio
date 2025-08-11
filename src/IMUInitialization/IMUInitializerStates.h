@@ -151,18 +151,11 @@ namespace dmvio
   private:
     void threadRun();
 
-    enum ThreadStatus
-    {
-      NOT_RUNNING,
-      RUNNING
-    };
-    ThreadStatus status = NOT_RUNNING;
-    std::thread runthread;
-
+    bool running = false;
     double optimizingTimestamp;
     using AddPoseData = std::tuple<const dso::FrameShell *, bool, IMUData>; // We need to save the pointers because
     // CoarseIMUInitOptimizer will use them to get the updated poses later.
-    std::vector<AddPoseData> cachedData;
+    std::deque<AddPoseData> cachedData;
   };
 
   // depending on the value of imuInitLogic.realtimeCoaresIMUInit this creates either a CoarseIMUInitState or a

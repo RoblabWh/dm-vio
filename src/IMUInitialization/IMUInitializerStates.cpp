@@ -110,23 +110,24 @@ dmvio::RealtimeCoarseIMUInitState::addPose(const dso::FrameShell &shell, bool wi
                                            const IMUData *imuData)
 {
   dmvio::TimeMeasurement meas("RealtimeCoarseIMUInitState::addPose");
-  switch (status)
+  if (running)
   {
-  case NOT_RUNNING:
+    // Save data coming in while the thread is running.
+    cachedData.emplace_back(&shell, willBecomeKeyframe, *imuData);
+  }
+  else
+  {
     DefaultActiveIMUInitializerState::addPose(shell, willBecomeKeyframe, imuData);
     if (logic.coarseIMUOptimizer->numFrames > 5 && willBecomeKeyframe && !logic.dsoSettings->fullResetRequested)
     {
       optimizingTimestamp = shell.timestamp;
       // perform optimization in separate thread.
-      runthread = std::thread{&RealtimeCoarseIMUInitState::threadRun, this};
-      status = RUNNING;
-      runthread.detach();
+      auto &thread = logic.dsoSettings->rtCoarseImuInitThread;
+      if (thread.joinable())
+        thread.join();
+      thread = std::thread{&RealtimeCoarseIMUInitState::threadRun, this};
+      running = true;
     }
-    break;
-  case RUNNING:
-    // Save data coming in while the thread is running.
-    cachedData.emplace_back(&shell, willBecomeKeyframe, *imuData);
-    break;
   }
   return nullptr;
 }
@@ -161,7 +162,7 @@ void dmvio::RealtimeCoarseIMUInitState::threadRun()
   }
   cachedData.clear();
   if (!newState)
-    status = NOT_RUNNING;
+    running = false;
   logic.stateChanger.setState(std::move(newState));
 }
 
@@ -342,9 +343,11 @@ dmvio::RealtimePGBAState::postBAInit(int keyframeId, gtsam::NonlinearFactor::sha
     logic.pgba->prepareOptimization();
 
     // Start optimization thread
-    std::thread runthread{&RealtimePGBAState::threadRun, this};
+    auto &thread = logic.dsoSettings->rtPgbaThread;
+    if (thread.joinable())
+      thread.join();
+    thread = std::thread{&RealtimePGBAState::threadRun, this};
     running = true;
-    runthread.detach();
   }
   return nullptr;
 }

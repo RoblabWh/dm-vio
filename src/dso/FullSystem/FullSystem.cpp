@@ -1303,6 +1303,10 @@ namespace dso
     lock.unlock();
 
     mappingThread.join();
+    if (settings->rtCoarseImuInitThread.joinable())
+      settings->rtCoarseImuInitThread.join();
+    if (settings->rtPgbaThread.joinable())
+      settings->rtPgbaThread.join();
   }
 
   void FullSystem::makeNonKeyFrame(FrameHessian *fh)

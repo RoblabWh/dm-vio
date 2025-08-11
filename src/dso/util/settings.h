@@ -28,6 +28,7 @@
 #include <string.h>
 #include <string>
 #include <cmath>
+#include <thread>
 #include "util/NumType.h"
 #include <boost/thread/mutex.hpp>
 
@@ -248,6 +249,9 @@ namespace dso
     int CalibHessianInstanceCounter = 0;
     int PointFrameResidualInstanceCounter = 0;
     boost::mutex shellPoseMutex;
+
+    std::thread rtCoarseImuInitThread;
+    std::thread rtPgbaThread;
   };
 
   extern int staticPattern[13][40][2];
