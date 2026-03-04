@@ -6,17 +6,23 @@
     // X11
     "--env=DISPLAY",
     "--env=QT_X11_NO_MITSHM=1",
-    "--volume=/tmp/.X11-unix:/tmp/.X11-unix:rw"
+    "--volume=/tmp/.X11-unix:/tmp/.X11-unix:rw",
     // Data
-    //TODO: Mount volumes to access datasets
-
+    //TODO: Mount volumes to access datasets, e.g.:
+    "--volume=/var/datasets/:/data:ro"
   ],
-  "customizations": {
-    "vscode": {
-      "extensions": [
-        // C/C++
-        "ms-vscode.cpptools-extension-pack"
-      ]
-    }
-  }
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"llvm-vs-code-extensions.vscode-clangd",
+				"ms-vscode.cmake-tools",
+				"vadimcn.vscode-lldb"
+			],
+			"settings": {
+				"cmake.configureArgs": [
+					"-DCMAKE_EXPORT_COMPILE_COMMANDS=1"
+				]
+			}
+		}
+	}
 }
