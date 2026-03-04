@@ -11,9 +11,9 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 # required libraries
 find_package(Boost COMPONENTS system thread)
-find_package(GTSAM REQUIRED)
-find_package(yaml-cpp REQUIRED)
+find_package(Eigen3 REQUIRED NO_MODULE)
 find_package(OpenCV COMPONENTS imgproc imgcodecs videoio REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 
 if(${Boost_VERSION} GREATER_EQUAL 106500)
@@ -56,7 +56,7 @@ if(MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
 endif(MSVC)
 
-option(MARCH_NATIVE "Use -march=native (HAS to match GTSAM setting)" ON)
+option(MARCH_NATIVE "Use -march=native" ON)
 if (MARCH_NATIVE)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
 endif()
@@ -119,7 +119,13 @@ set(dmvio_SOURCE_FILES
   src/util/SophusEnsureHandler.cpp
 )
 
+# add and configure thirdparty libraries
 add_subdirectory(thirdparty/basalt-headers)
+set(GTSAM_POSE3_EXPMAP ON CACHE BOOL "" FORCE)
+set(GTSAM_ROT3_EXPMAP ON CACHE BOOL "" FORCE)
+set(GTSAM_USE_SYSTEM_EIGEN ON CACHE BOOL "" FORCE)
+set(GTSAM_BUILD_WITH_MARCH_NATIVE ${MARCH_NATIVE} CACHE BOOL "Force GTSAM and DM-VIO to use same march setting" FORCE)
+add_subdirectory(thirdparty/gtsam)
 
 option(BUILD_EXECUTABLES "Build executables" ON)
 option(WITH_OPENCV "Build with OpenCV" ON)
