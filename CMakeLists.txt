@@ -120,7 +120,9 @@ set(dmvio_SOURCE_FILES
 )
 
 # add and configure thirdparty libraries
+set(BUILD_DOCS OFF CACHE BOOL "" FORCE)
 add_subdirectory(thirdparty/basalt-headers)
+set(GTSAM_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GTSAM_POSE3_EXPMAP ON CACHE BOOL "" FORCE)
 set(GTSAM_ROT3_EXPMAP ON CACHE BOOL "" FORCE)
 set(GTSAM_USE_SYSTEM_EIGEN ON CACHE BOOL "" FORCE)
