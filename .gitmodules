@@ -6,7 +6,7 @@
 	url = https://github.com/google/googletest.git
 [submodule "thirdparty/basalt-headers"]
 	path = thirdparty/basalt-headers
-	url = git@github.com:RoblabWh/basalt-headers.git
+	url = https://github.com/RoblabWh/basalt-headers.git
 [submodule "thirdparty/gtsam"]
 	path = thirdparty/gtsam
 	url = https://github.com/borglab/gtsam.git
